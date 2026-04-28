@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractFromTitle, extractFromOpportunity } from "@/lib/extract/regex";
+import { extractFromTitle, extractFromOpportunity, extractFromAccountField } from "@/lib/extract/regex";
 
 describe("extractFromTitle", () => {
   it("pulls the customer code from [DB][CUSTOMER] prefix", () => {
@@ -29,5 +29,30 @@ describe("extractFromOpportunity", () => {
 
   it("returns null when missing", () => {
     expect(extractFromOpportunity("nothing here")).toBeNull();
+  });
+});
+
+describe("extractFromAccountField", () => {
+  it("matches 'Name of the account: <X>' with colon", () => {
+    expect(
+      extractFromAccountField("Name of the account: ACME Corp\nMore text"),
+    ).toBe("ACME Corp");
+  });
+
+  it("matches 'Name of the group/account:<X>' with no space", () => {
+    expect(extractFromAccountField("Name of the group/account:HKJC")).toBe("HKJC");
+  });
+
+  it("matches 'Name of the account - <X>' with dash", () => {
+    expect(extractFromAccountField("5. Name of the account - Q2\n6.")).toBe("Q2");
+  });
+
+  it("returns null when value is N/A", () => {
+    expect(extractFromAccountField("Name of the account: NA")).toBeNull();
+    expect(extractFromAccountField("Name of the account: N/A")).toBeNull();
+  });
+
+  it("returns null when missing", () => {
+    expect(extractFromAccountField("nothing here")).toBeNull();
   });
 });

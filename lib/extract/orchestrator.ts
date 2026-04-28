@@ -1,4 +1,4 @@
-import { extractFromTitle, extractFromOpportunity } from "./regex";
+import { extractFromTitle, extractFromOpportunity, extractFromAccountField } from "./regex";
 import type { ExtractInput, ExtractResult } from "@/lib/llm/gemini";
 
 export type CustomerSource = "override" | "regex_title" | "regex_desc" | "llm" | "unknown";
@@ -39,6 +39,10 @@ export async function resolveCustomer(input: ResolveInput): Promise<ResolveOutpu
   const fromDesc = extractFromOpportunity(input.description);
   if (fromDesc) {
     return { customer: fromDesc, source: "regex_desc", modelUsed: null };
+  }
+  const fromAccount = extractFromAccountField(input.description);
+  if (fromAccount) {
+    return { customer: fromAccount, source: "regex_desc", modelUsed: null };
   }
   if (input.llmBudgetExhausted) {
     return { customer: "Unknown", source: "unknown", modelUsed: null };

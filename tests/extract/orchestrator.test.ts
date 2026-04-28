@@ -77,6 +77,19 @@ describe("resolveCustomer", () => {
     expect(r).toEqual({ customer: "Unknown", source: "unknown", modelUsed: null });
   });
 
+  it("falls through to extractFromAccountField when Opportunity Info is missing", async () => {
+    const r = await resolveCustomer({
+      title: "no prefix",
+      description: "5. Name of the account - Q2\n6. Plan: TM Pro",
+      override: null,
+      cache: null,
+      llm: noLLM,
+    });
+    expect(r.source).toBe("regex_desc");
+    expect(r.customer).toBe("Q2");
+    expect(noLLM).not.toHaveBeenCalled();
+  });
+
   it("respects llm budget exhaustion", async () => {
     const llm = vi.fn();
     const r = await resolveCustomer({
