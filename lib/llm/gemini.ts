@@ -4,9 +4,9 @@ import { GoogleGenAI } from "@google/genai";
 // identifier (NOT the marketing label from the quota dashboard). To discover
 // what your API key has access to, run: `npm run gemini-models`.
 export const MODEL_CASCADE = [
-  "gemini-2.5-flash-lite",
-  "gemini-2.5-flash",
-  "gemma-3-27b-it",
+  "gemini-3.1-flash-lite-preview", // 500 RPD, 15 RPM — primary workhorse
+  "gemini-2.5-flash-lite",         // 20 RPD, 10 RPM — fallback
+  "gemma-3-27b-it",                // 14.4K RPD, 30 RPM — high-availability floor
 ] as const;
 
 export type ModelName = (typeof MODEL_CASCADE)[number];
