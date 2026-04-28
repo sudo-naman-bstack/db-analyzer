@@ -38,14 +38,37 @@ interface GenAIClientLike {
 
 export interface ExtractOptions {
   clientFactory?: () => GenAIClientLike;
+  /** Override the per-model 429 backoff. Defaults to 5000ms. */
+  backoffMs?: number;
+  /** Override the per-model 429 retry count. Defaults to 2. */
+  maxRetries?: number;
 }
 
 function defaultFactory(): GenAIClientLike {
   return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? "" }) as unknown as GenAIClientLike;
 }
 
-function isRetryable(_err: unknown): boolean {
-  return true; // network/unknown — try next model
+function statusOf(err: unknown): number | undefined {
+  return (err as { status?: number })?.status;
+}
+
+function isRateLimit(err: unknown): boolean {
+  return statusOf(err) === 429;
+}
+
+function isCascadable(err: unknown): boolean {
+  // Cascade to next model on rate limit, server errors, or unknown network errors.
+  // Don't cascade on 4xx (other than 429) — those are config/auth issues that
+  // would fail on every model anyway.
+  const s = statusOf(err);
+  if (s === undefined) return true; // network/unknown — try next
+  if (s === 429) return true;
+  if (s >= 500) return true;
+  return false;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 function parseCustomer(text: string | undefined): string | null {
@@ -69,22 +92,36 @@ export async function extractCustomerWithLLM(
 ): Promise<ExtractResult | null> {
   const factory = opts.clientFactory ?? defaultFactory;
   const client = factory();
+  const backoffMs = opts.backoffMs ?? 5000;
+  const maxRetries = opts.maxRetries ?? 2;
   const userText = `Title: ${input.title}\n\nDescription:\n${input.description.slice(0, 6000)}`;
 
   for (const model of MODEL_CASCADE) {
-    try {
-      const res = await client.models.generateContent({
-        model,
-        contents: [
-          { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
-          { role: "user", parts: [{ text: userText }] },
-        ],
-        config: { temperature: 0 },
-      });
-      const customer = parseCustomer(res.text);
-      if (customer) return { customer, modelUsed: model };
-    } catch (err) {
-      if (!isRetryable(err)) throw err;
+    let attempt = 0;
+    while (true) {
+      try {
+        const res = await client.models.generateContent({
+          model,
+          contents: [
+            { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+            { role: "user", parts: [{ text: userText }] },
+          ],
+          config: { temperature: 0 },
+        });
+        const customer = parseCustomer(res.text);
+        if (customer) return { customer, modelUsed: model };
+        // Parsed but no customer — try next model, don't retry same one.
+        break;
+      } catch (err) {
+        if (isRateLimit(err) && attempt < maxRetries) {
+          // Rate-limited: sleep and retry the SAME model before cascading.
+          attempt += 1;
+          await sleep(backoffMs * attempt);
+          continue;
+        }
+        if (!isCascadable(err)) throw err;
+        break; // cascade to next model
+      }
     }
   }
   return null;

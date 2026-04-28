@@ -35,20 +35,46 @@ describe("extractCustomerWithLLM", () => {
     expect(m.calls).toEqual([MODEL_CASCADE[0]]);
   });
 
-  it("falls through on rate limit", async () => {
+  it("retries the same model on 429 before cascading", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test");
+    const rateLimit = () => {
+      throw Object.assign(new Error("429"), { status: 429 });
+    };
     const m = mockGenerate([
-      () => {
-        throw Object.assign(new Error("429"), { status: 429 });
-      },
-      () => ({ text: '{"customer":"ACME"}' }),
+      rateLimit, // first call: 429
+      () => ({ text: '{"customer":"ACME"}' }), // retry on same model: success
     ]);
     const result = await extractCustomerWithLLM(
       { title: "x", description: "x" },
-      { clientFactory: m.factory },
+      { clientFactory: m.factory, backoffMs: 1, maxRetries: 2 },
+    );
+    expect(result).toEqual({ customer: "ACME", modelUsed: MODEL_CASCADE[0] });
+    // Same model called twice — retry, not cascade
+    expect(m.calls).toEqual([MODEL_CASCADE[0], MODEL_CASCADE[0]]);
+  });
+
+  it("cascades to next model after exhausting 429 retries", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test");
+    const rateLimit = () => {
+      throw Object.assign(new Error("429"), { status: 429 });
+    };
+    const m = mockGenerate([
+      rateLimit, // model 0: attempt 1
+      rateLimit, // model 0: retry 1
+      rateLimit, // model 0: retry 2
+      () => ({ text: '{"customer":"ACME"}' }), // model 1: success
+    ]);
+    const result = await extractCustomerWithLLM(
+      { title: "x", description: "x" },
+      { clientFactory: m.factory, backoffMs: 1, maxRetries: 2 },
     );
     expect(result).toEqual({ customer: "ACME", modelUsed: MODEL_CASCADE[1] });
-    expect(m.calls).toEqual([MODEL_CASCADE[0], MODEL_CASCADE[1]]);
+    expect(m.calls).toEqual([
+      MODEL_CASCADE[0],
+      MODEL_CASCADE[0],
+      MODEL_CASCADE[0],
+      MODEL_CASCADE[1],
+    ]);
   });
 
   it("falls through on parse failure", async () => {
