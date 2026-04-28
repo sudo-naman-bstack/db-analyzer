@@ -8,8 +8,12 @@ const FILTER_LABELS: Record<TicketFilter, string> = {
   open: "Open dealblockers",
   "past-eta": "Past Promised ETA",
   done: "Closed dealblockers",
+  "no-eta": "Open without Promised ETA",
+  unassigned: "Open and unassigned",
   all: "All dealblockers",
 };
+
+const VALID_FILTERS: TicketFilter[] = ["open", "past-eta", "done", "no-eta", "unassigned", "all"];
 
 export default async function TicketsPage({
   searchParams,
@@ -17,9 +21,8 @@ export default async function TicketsPage({
   searchParams: Promise<{ filter?: string; customer?: string }>;
 }) {
   const params = await searchParams;
-  const raw = params.filter ?? "all";
-  const filter: TicketFilter =
-    raw === "open" || raw === "past-eta" || raw === "done" ? raw : "all";
+  const raw = (params.filter ?? "all") as TicketFilter;
+  const filter: TicketFilter = VALID_FILTERS.includes(raw) ? raw : "all";
   const customer = params.customer;
   const rows = await getTicketsByFilter(filter, customer);
 
@@ -37,6 +40,7 @@ export default async function TicketsPage({
             <th className="px-3 py-2">Summary</th>
             <th className="px-3 py-2">Customer</th>
             <th className="px-3 py-2">Status</th>
+            <th className="px-3 py-2">Assignee</th>
             <th className="px-3 py-2">Promised ETA</th>
             <th className="px-3 py-2">ARR</th>
           </tr>
@@ -52,6 +56,7 @@ export default async function TicketsPage({
               <td className="px-3 py-2">{t.summary}</td>
               <td className="px-3 py-2">{t.customer ?? "Unknown"}</td>
               <td className="px-3 py-2">{t.status}</td>
+              <td className="px-3 py-2">{t.assignee ?? "—"}</td>
               <td className="px-3 py-2">
                 <span
                   className={

@@ -143,7 +143,7 @@ export async function getLastSuccessfulRefreshTime(): Promise<Date | null> {
   return row?.startedAt ?? null;
 }
 
-export type TicketFilter = "open" | "past-eta" | "done" | "all";
+export type TicketFilter = "open" | "past-eta" | "done" | "no-eta" | "unassigned" | "all";
 
 export async function getTicketsByFilter(filter: TicketFilter, customer?: string) {
   const conditions: any[] = [];
@@ -157,6 +157,16 @@ export async function getTicketsByFilter(filter: TicketFilter, customer?: string
     );
   } else if (filter === "done") {
     conditions.push(isNotNull(tickets.doneAt));
+  } else if (filter === "no-eta") {
+    conditions.push(
+      sql`${tickets.statusCategory} <> 'done'`,
+      sql`${tickets.promisedEta} IS NULL`,
+    );
+  } else if (filter === "unassigned") {
+    conditions.push(
+      sql`${tickets.statusCategory} <> 'done'`,
+      sql`${tickets.assignee} IS NULL`,
+    );
   }
   if (customer) {
     conditions.push(eq(tickets.customer, customer));
@@ -166,4 +176,26 @@ export async function getTicketsByFilter(filter: TicketFilter, customer?: string
     .from(tickets)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(tickets.updated));
+}
+
+export async function getTriageCounts() {
+  const [noEta] = await db
+    .select({ n: count() })
+    .from(tickets)
+    .where(
+      and(
+        sql`${tickets.statusCategory} <> 'done'`,
+        sql`${tickets.promisedEta} IS NULL`,
+      ),
+    );
+  const [unassigned] = await db
+    .select({ n: count() })
+    .from(tickets)
+    .where(
+      and(
+        sql`${tickets.statusCategory} <> 'done'`,
+        sql`${tickets.assignee} IS NULL`,
+      ),
+    );
+  return { noEta: noEta?.n ?? 0, unassigned: unassigned?.n ?? 0 };
 }

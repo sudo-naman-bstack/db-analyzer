@@ -1,4 +1,4 @@
-import { getOverviewKpis, getCustomerLeaderboard, getLastRefreshRun, getNeedsReview } from "@/lib/db/queries";
+import { getOverviewKpis, getCustomerLeaderboard, getLastRefreshRun, getNeedsReview, getTriageCounts } from "@/lib/db/queries";
 import { KpiCard } from "@/components/kpi-card";
 import { RefreshButton } from "@/components/refresh-button";
 import { fmtCurrency, fmtDate } from "@/lib/format";
@@ -7,11 +7,12 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const [kpis, leaderboard, lastRun, needsReview] = await Promise.all([
+  const [kpis, leaderboard, lastRun, needsReview, triage] = await Promise.all([
     getOverviewKpis(),
     getCustomerLeaderboard(15),
     getLastRefreshRun(),
     getNeedsReview(),
+    getTriageCounts(),
   ]);
 
   return (
@@ -47,6 +48,35 @@ export default async function OverviewPage() {
       </div>
 
       <section>
+        <h3 className="mb-2 text-sm font-medium text-muted-foreground">Triage</h3>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link
+            href="/tickets?filter=no-eta"
+            className="rounded-lg border px-3 py-2 hover:bg-muted"
+          >
+            <span className="font-semibold">{triage.noEta}</span>{" "}
+            <span className="text-muted-foreground">open without Promised ETA</span>
+          </Link>
+          <Link
+            href="/tickets?filter=unassigned"
+            className="rounded-lg border px-3 py-2 hover:bg-muted"
+          >
+            <span className="font-semibold">{triage.unassigned}</span>{" "}
+            <span className="text-muted-foreground">open and unassigned</span>
+          </Link>
+          {needsReview.length > 0 && (
+            <Link
+              href="/admin/needs-review"
+              className="rounded-lg border border-amber-300 px-3 py-2 text-amber-700 hover:bg-amber-50"
+            >
+              <span className="font-semibold">{needsReview.length}</span>{" "}
+              <span>need customer review</span>
+            </Link>
+          )}
+        </div>
+      </section>
+
+      <section>
         <h2 className="mb-3 text-lg font-medium">Top customers</h2>
         <div className="rounded-lg border">
           <table className="w-full text-sm">
@@ -79,13 +109,6 @@ export default async function OverviewPage() {
         </div>
       </section>
 
-      {needsReview.length > 0 && (
-        <section>
-          <Link href="/admin/needs-review" className="text-sm text-amber-600 hover:underline">
-            {needsReview.length} ticket{needsReview.length === 1 ? "" : "s"} need customer review →
-          </Link>
-        </section>
-      )}
     </div>
   );
 }
