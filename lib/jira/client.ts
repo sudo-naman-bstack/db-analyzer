@@ -1,8 +1,20 @@
 import { ISSUE_FIELDS_TO_REQUEST } from "./fields";
 import { parseIssue, type ParsedIssue } from "./parse";
 
-const JQL_TEMPLATE = (reporter: string, project: string) =>
-  `reporter = ${reporter} AND project = "${project}" ORDER BY status ASC, created DESC`;
+function formatJqlDate(d: Date): string {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mi = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
+}
+
+const JQL_TEMPLATE = (reporter: string, project: string, since?: string) => {
+  const base = `reporter = ${reporter} AND project = "${project}"`;
+  const filter = since ? ` AND updated >= "${since}"` : "";
+  return `${base}${filter} ORDER BY status ASC, created DESC`;
+};
 
 function authHeader(): string {
   const email = process.env.JIRA_EMAIL ?? "";
@@ -34,7 +46,9 @@ interface SearchResponse {
   nextPageToken?: string | null;
 }
 
-export async function fetchAllDealblockerIssues(): Promise<ParsedIssue[]> {
+export async function fetchAllDealblockerIssues(
+  options: { since?: Date } = {},
+): Promise<ParsedIssue[]> {
   const base = process.env.JIRA_BASE_URL;
   const reporter = process.env.JIRA_REPORTER_ACCOUNT_ID;
   const project = process.env.JIRA_PROJECT_KEY;
@@ -42,7 +56,8 @@ export async function fetchAllDealblockerIssues(): Promise<ParsedIssue[]> {
     throw new Error("Jira env vars missing");
   }
 
-  const jql = JQL_TEMPLATE(reporter, project);
+  const sinceStr = options.since ? formatJqlDate(options.since) : undefined;
+  const jql = JQL_TEMPLATE(reporter, project, sinceStr);
   const all: ParsedIssue[] = [];
   let nextPageToken: string | null | undefined = undefined;
 

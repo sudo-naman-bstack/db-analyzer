@@ -133,6 +133,16 @@ export async function getLastRefreshRun() {
   return row ?? null;
 }
 
+export async function getLastSuccessfulRefreshTime(): Promise<Date | null> {
+  const [row] = await db
+    .select({ startedAt: refreshRuns.startedAt })
+    .from(refreshRuns)
+    .where(eq(refreshRuns.errors, 0))
+    .orderBy(desc(refreshRuns.startedAt))
+    .limit(1);
+  return row?.startedAt ?? null;
+}
+
 export type TicketFilter = "open" | "past-eta" | "done" | "all";
 
 export async function getTicketsByFilter(filter: TicketFilter, customer?: string) {

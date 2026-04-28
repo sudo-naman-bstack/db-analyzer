@@ -24,6 +24,7 @@ const baseDeps = () => {
   const llm = vi.fn();
   const categoryOf = (status: string) =>
     status === "Done" ? "done" : status === "In Progress" ? "indeterminate" : "new";
+  const getLastSuccessfulRefreshTime = vi.fn().mockResolvedValue(null);
   return {
     upsertTicket,
     insertStatusTransitionsIfNew,
@@ -33,6 +34,7 @@ const baseDeps = () => {
     getCachedExtraction,
     llm,
     categoryOf,
+    getLastSuccessfulRefreshTime,
   };
 };
 

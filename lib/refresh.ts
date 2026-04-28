@@ -18,6 +18,7 @@ export interface RefreshDeps {
   } | null>;
   llm: (input: ExtractInput) => Promise<ExtractResult | null>;
   categoryOf: (status: string) => string;
+  getLastSuccessfulRefreshTime: () => Promise<Date | null>;
 }
 
 export interface RefreshResult {
@@ -30,6 +31,7 @@ export interface RefreshResult {
 export interface RefreshOptions {
   trigger: "cron" | "manual";
   maxLlmCalls: number;
+  force?: boolean;
   deps: RefreshDeps;
 }
 
@@ -41,7 +43,14 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
   let newOrChanged = 0;
   const errorMessages: string[] = [];
 
-  const issues = await fetchAllDealblockerIssues();
+  let since: Date | undefined;
+  if (!opts.force) {
+    const hwm = await deps.getLastSuccessfulRefreshTime();
+    if (hwm) {
+      since = new Date(hwm.getTime() - 6 * 60 * 60 * 1000); // 6h buffer
+    }
+  }
+  const issues = await fetchAllDealblockerIssues({ since });
 
   const learnedMap = buildCategoryMap(
     issues.map((i) => ({ status: i.status, statusCategory: i.statusCategory })),
