@@ -1,6 +1,8 @@
 import { getDoneTickets } from "@/lib/db/queries";
 import { ClosureHistogram } from "@/components/closure-histogram";
+import { SectionHeader } from "@/components/section-header";
 import { fmtDate, daysBetween } from "@/lib/format";
+import { TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -42,14 +44,23 @@ export default async function ClosuresPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <h2 className="text-lg font-medium">Closure metrics</h2>
-        <div className="flex gap-2 text-sm">
+      {/* Header + time-range picker */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <SectionHeader
+          icon={<TrendingUp className="h-4 w-4" />}
+          title="Closure metrics"
+          description={`${tickets.length} tickets closed in the last ${since} days`}
+        />
+        <div className="flex gap-1.5">
           {[30, 90, 365].map((d) => (
             <Link
               key={d}
               href={`?since=${d}`}
-              className={`rounded border px-2 py-1 ${since === d ? "bg-muted" : ""}`}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                since === d
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
             >
               {d}d
             </Link>
@@ -57,38 +68,72 @@ export default async function ClosuresPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 text-sm">
-        <div className="rounded-lg border p-3">Median: <b>{median ?? "—"}d</b></div>
-        <div className="rounded-lg border p-3">P90: <b>{p90 ?? "—"}d</b></div>
-        <div className="rounded-lg border p-3">Mean: <b>{mean ?? "—"}d</b></div>
+      {/* Summary stat cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Median", value: median != null ? `${median}d` : "—" },
+          { label: "P90", value: p90 != null ? `${p90}d` : "—" },
+          { label: "Mean", value: mean != null ? `${mean}d` : "—" },
+        ].map(({ label, value }) => (
+          <div
+            key={label}
+            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+            <p className="mt-1.5 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
+              {value}
+            </p>
+          </div>
+        ))}
       </div>
 
+      {/* Histogram */}
       <ClosureHistogram data={histogram} />
 
-      <table className="w-full text-sm">
-        <thead className="bg-muted/30 text-left">
-          <tr>
-            <th className="px-3 py-2">Key</th>
-            <th className="px-3 py-2">Customer</th>
-            <th className="px-3 py-2">Created</th>
-            <th className="px-3 py-2">Done</th>
-            <th className="px-3 py-2">Days</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tickets.map((t) => (
-            <tr key={t.key} className="border-t">
-              <td className="px-3 py-2">
-                <Link href={`/ticket/${t.key}`} className="hover:underline">{t.key}</Link>
-              </td>
-              <td className="px-3 py-2">{t.customer ?? "Unknown"}</td>
-              <td className="px-3 py-2">{fmtDate(t.created)}</td>
-              <td className="px-3 py-2">{fmtDate(t.doneAt as Date)}</td>
-              <td className="px-3 py-2">{daysBetween(t.created, t.doneAt as Date)}</td>
+      {/* Closure table */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-100 bg-slate-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Key</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Customer</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Created</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Done</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Days</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {tickets.map((t, i) => {
+              const days = daysBetween(t.created, t.doneAt as Date);
+              const daysColor =
+                days > 60
+                  ? "text-red-700 font-semibold"
+                  : days > 30
+                    ? "text-amber-700 font-medium"
+                    : "text-emerald-700 font-medium";
+              return (
+                <tr
+                  key={t.key}
+                  className={`transition-colors hover:bg-blue-50/40 ${i % 2 === 1 ? "bg-slate-50/40" : "bg-white"}`}
+                >
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/ticket/${t.key}`}
+                      className="font-mono text-xs font-medium text-blue-600 hover:underline"
+                    >
+                      {t.key}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{t.customer ?? "Unknown"}</td>
+                  <td className="px-4 py-3 tabular-nums text-slate-500">{fmtDate(t.created)}</td>
+                  <td className="px-4 py-3 tabular-nums text-slate-500">{fmtDate(t.doneAt as Date)}</td>
+                  <td className={`px-4 py-3 text-right tabular-nums ${daysColor}`}>{days}d</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
