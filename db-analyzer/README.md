@@ -10,6 +10,4 @@ Internal dashboard for BrowserStack Test Management dealblocker tickets.
 
 ## Deploy
 
-Vercel project. Postgres + Cron + password protection configured in Vercel dashboard.
-
-See `docs/superpowers/specs/2026-04-28-dealblocker-dashboard-design.md` for full design.
+See [DEPLOY.md](./DEPLOY.md) for end-to-end Vercel deployment steps (GitHub, Postgres, env vars, password protection, cron, schema push).
