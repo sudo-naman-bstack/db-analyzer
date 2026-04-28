@@ -26,13 +26,21 @@ export default async function OverviewPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Open dealblockers" value={String(kpis.openCount)} />
-        <KpiCard label="ARR at risk" value={fmtCurrency(kpis.arrAtRisk)} />
-        <KpiCard label="Past Promised ETA" value={String(kpis.pastEtaCount)} />
-        <KpiCard
-          label="Median closure (90d)"
-          value={kpis.medianClosureDays != null ? `${Math.round(kpis.medianClosureDays)}d` : "—"}
-        />
+        <Link href="/tickets?filter=open" className="block hover:opacity-80">
+          <KpiCard label="Open dealblockers" value={String(kpis.openCount)} />
+        </Link>
+        <Link href="/tickets?filter=open" className="block hover:opacity-80">
+          <KpiCard label="ARR at risk" value={fmtCurrency(kpis.arrAtRisk)} />
+        </Link>
+        <Link href="/tickets?filter=past-eta" className="block hover:opacity-80">
+          <KpiCard label="Past Promised ETA" value={String(kpis.pastEtaCount)} />
+        </Link>
+        <Link href="/closures" className="block hover:opacity-80">
+          <KpiCard
+            label="Median closure (90d)"
+            value={kpis.medianClosureDays != null ? `${Math.round(kpis.medianClosureDays)}d` : "—"}
+          />
+        </Link>
       </div>
 
       <section>
