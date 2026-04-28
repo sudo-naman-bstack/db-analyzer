@@ -13,6 +13,37 @@ describe("extractFromTitle", () => {
   it("handles whitespace and lowercase prefix", () => {
     expect(extractFromTitle("  [db][ Acme Corp ] Title")).toBe("Acme Corp");
   });
+
+  it("pulls customer from single-bracket prefix [Aviva] Title", () => {
+    expect(extractFromTitle("[Aviva] Generate more test cases")).toBe("Aviva");
+  });
+
+  it("handles names with hyphens like [Sci-Play]", () => {
+    expect(extractFromTitle("[Sci-Play] Linking bugs")).toBe("Sci-Play");
+  });
+
+  it("handles short codes like [GM]", () => {
+    expect(extractFromTitle("[GM] Request to support uploading")).toBe("GM");
+  });
+
+  it("handles dot in customer code [Heady.io]", () => {
+    expect(extractFromTitle("[Heady.io] BDD support")).toBe("Heady.io");
+  });
+
+  it("strips trailing dot [Primark.]", () => {
+    expect(extractFromTitle("[Primark.] Filtering")).toBe("Primark");
+  });
+
+  it("rejects generic tags [BUG], [FIX], [P0], [TODO]", () => {
+    expect(extractFromTitle("[BUG] crash")).toBeNull();
+    expect(extractFromTitle("[FIX] thing")).toBeNull();
+    expect(extractFromTitle("[P0] urgent")).toBeNull();
+    expect(extractFromTitle("[TODO] later")).toBeNull();
+  });
+
+  it("rejects standalone [DB] without nested customer", () => {
+    expect(extractFromTitle("[DB] without customer")).toBeNull();
+  });
 });
 
 describe("extractFromOpportunity", () => {
