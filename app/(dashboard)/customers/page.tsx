@@ -11,11 +11,12 @@ export default async function CustomersPage() {
     .select({
       customer: tickets.customer,
       n: count(),
-      arr: sql<string>`COALESCE(SUM(${tickets.baselineArr}), 0)`,
+      arr: sql<string>`COALESCE(MAX(${tickets.baselineArr}), 0)`,
+      iacv: sql<string>`COALESCE(SUM(${tickets.incrementalAcv}), 0)`,
     })
     .from(tickets)
     .groupBy(tickets.customer)
-    .orderBy(desc(count()), desc(sql`COALESCE(SUM(${tickets.baselineArr}), 0)`));
+    .orderBy(desc(count()), desc(sql`COALESCE(MAX(${tickets.baselineArr}), 0)`));
 
   const all = await db.select().from(tickets).orderBy(desc(tickets.updated));
   const byCustomer = new Map<string, typeof all>();
@@ -42,7 +43,8 @@ export default async function CustomersPage() {
                 <div className="font-medium">{customer}</div>
                 <div className="flex gap-4 text-sm text-muted-foreground">
                   <span>{g.n} tickets</span>
-                  <span>{fmtCurrency(g.arr)}</span>
+                  <span>ARR {fmtCurrency(g.arr)}</span>
+                  <span>iACV {fmtCurrency(g.iacv)}</span>
                 </div>
               </summary>
               <table className="w-full border-t text-sm">

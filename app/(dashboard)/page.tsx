@@ -25,12 +25,15 @@ export default async function OverviewPage() {
         <RefreshButton />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Link href="/tickets?filter=open" className="block hover:opacity-80">
           <KpiCard label="Open dealblockers" value={String(kpis.openCount)} />
         </Link>
         <Link href="/tickets?filter=open" className="block hover:opacity-80">
-          <KpiCard label="ARR at risk" value={fmtCurrency(kpis.arrAtRisk)} />
+          <KpiCard label="ARR exposed" value={fmtCurrency(kpis.arrExposed)} hint="Customer-level, deduped" />
+        </Link>
+        <Link href="/tickets?filter=open" className="block hover:opacity-80">
+          <KpiCard label="iACV at risk" value={fmtCurrency(kpis.iacvAtRisk)} hint="Sum across tickets" />
         </Link>
         <Link href="/tickets?filter=past-eta" className="block hover:opacity-80">
           <KpiCard label="Past Promised ETA" value={String(kpis.pastEtaCount)} />
@@ -52,6 +55,7 @@ export default async function OverviewPage() {
                 <th className="px-3 py-2">Customer</th>
                 <th className="px-3 py-2">Tickets</th>
                 <th className="px-3 py-2">ARR</th>
+                <th className="px-3 py-2">iACV</th>
               </tr>
             </thead>
             <tbody>
@@ -67,6 +71,7 @@ export default async function OverviewPage() {
                   </td>
                   <td className="px-3 py-2">{row.n}</td>
                   <td className="px-3 py-2">{fmtCurrency(row.arr)}</td>
+                  <td className="px-3 py-2">{fmtCurrency(row.iacv)}</td>
                 </tr>
               ))}
             </tbody>
