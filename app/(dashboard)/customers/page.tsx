@@ -2,6 +2,7 @@ import { db } from "@/lib/db/client";
 import { tickets } from "@/lib/db/schema";
 import { sql, desc, count } from "drizzle-orm";
 import { fmtCurrency, fmtDate, isPastEta } from "@/lib/format";
+import { ExpandOnHash } from "@/components/expand-on-hash";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function CustomersPage() {
 
   return (
     <div className="space-y-6">
+      <ExpandOnHash />
       <h2 className="text-lg font-medium">By customer</h2>
       <div className="space-y-4">
         {grouped.map((g) => {
