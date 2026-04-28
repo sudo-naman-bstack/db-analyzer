@@ -3,6 +3,7 @@ import { extractStatusTransitions } from "./jira/changelog";
 import { deriveDoneAt } from "./status";
 import { resolveCustomer, contentHash, type CacheEntry } from "./extract/orchestrator";
 import type { ExtractInput, ExtractResult } from "./llm/gemini";
+import { buildCategoryMap, makeCategoryOf } from "./jira/category";
 
 export interface RefreshDeps {
   upsertTicket: (t: any) => Promise<void>;
@@ -42,15 +43,24 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
 
   const issues = await fetchAllDealblockerIssues();
 
+  const learnedMap = buildCategoryMap(
+    issues.map((i) => ({ status: i.status, statusCategory: i.statusCategory })),
+  );
+  const categoryOf = (status: string) => {
+    const learned = learnedMap[status];
+    if (learned) return learned;
+    return deps.categoryOf(status);
+  };
+
   for (const issue of issues) {
     try {
       const transitions = extractStatusTransitions(issue.key, issue.rawChangelog).map((t) => ({
         ...t,
-        toCategory: deps.categoryOf(t.toStatus),
+        toCategory: categoryOf(t.toStatus),
       }));
       const doneAt = deriveDoneAt(
         transitions.map((t) => ({ toStatus: t.toStatus, changedAt: t.changedAt })),
-        deps.categoryOf,
+        categoryOf,
       );
 
       const override = await deps.getOverride(issue.key);
