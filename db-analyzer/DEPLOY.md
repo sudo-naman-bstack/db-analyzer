@@ -62,8 +62,16 @@ Visit the deployed URL, log in with the password, click **Refresh now** on the O
 
 ## 8. Verify cron
 
-- **Vercel Dashboard → Crons** tab — should show `/api/refresh` running every 30 minutes
+Vercel **Hobby** plan caps cron jobs to **once per day**. `vercel.json` is set to `30 2 * * *` UTC = 8:00 AM IST daily.
+
+- **Vercel Dashboard → Crons** tab — should show `/api/refresh` scheduled at that time
 - Check `refresh_runs` table in Postgres to see history of cron-triggered runs
+
+### Want more frequent refreshes than once per day?
+
+Two free options:
+- **Use the "Refresh now" button** on the Overview page — refreshes on demand whenever you visit.
+- **Enable the GitHub Actions workflow** at `.github/workflows/refresh.yml.example`. Rename it to `refresh.yml`, add `DASHBOARD_URL` and (if password protection is on) `VERCEL_BYPASS` secrets in your repo settings, and it will hit `/api/refresh?trigger=manual` every 30 minutes from GitHub's runners. Free for private repos within the 2,000-min/month allowance — well under what this would consume.
 
 ## 9. Share with Director
 
