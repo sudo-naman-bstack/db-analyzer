@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
-import "dotenv/config";
+import { config } from "dotenv";
+config({ path: ".env.local" });
 
 async function main() {
   const apiKey = process.env.GEMINI_API_KEY;
