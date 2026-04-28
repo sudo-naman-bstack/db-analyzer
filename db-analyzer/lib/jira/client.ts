@@ -50,7 +50,7 @@ export async function fetchAllDealblockerIssues(): Promise<ParsedIssue[]> {
     const url = new URL("/rest/api/3/search/jql", base);
     url.searchParams.set("jql", jql);
     url.searchParams.set("fields", ISSUE_FIELDS_TO_REQUEST.join(","));
-    url.searchParams.set("expand", "changelog");
+    url.searchParams.set("expand", "changelog,renderedFields");
     url.searchParams.set("maxResults", "100");
     if (nextPageToken) url.searchParams.set("nextPageToken", nextPageToken);
 
