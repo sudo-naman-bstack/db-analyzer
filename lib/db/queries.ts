@@ -171,11 +171,18 @@ export async function getTicketsByFilter(filter: TicketFilter, customer?: string
   if (customer) {
     conditions.push(eq(tickets.customer, customer));
   }
+  // Triage filters (no-eta, unassigned, past-eta) sort by oldest-first
+  // since age is the actionable signal. Other views show most-recently
+  // updated first.
+  const orderBy =
+    filter === "no-eta" || filter === "unassigned" || filter === "past-eta"
+      ? tickets.created
+      : desc(tickets.updated);
   return db
     .select()
     .from(tickets)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(tickets.updated));
+    .orderBy(orderBy);
 }
 
 export async function getTriageCounts() {

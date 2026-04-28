@@ -1,5 +1,5 @@
 import { getTicketsByFilter, type TicketFilter } from "@/lib/db/queries";
-import { fmtDate, fmtCurrency, isPastEta } from "@/lib/format";
+import { fmtDate, fmtCurrency, isPastEta, daysBetween } from "@/lib/format";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -41,36 +41,43 @@ export default async function TicketsPage({
             <th className="px-3 py-2">Customer</th>
             <th className="px-3 py-2">Status</th>
             <th className="px-3 py-2">Assignee</th>
+            <th className="px-3 py-2">Created</th>
+            <th className="px-3 py-2">Age</th>
             <th className="px-3 py-2">Promised ETA</th>
             <th className="px-3 py-2">ARR</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((t) => (
-            <tr key={t.key} className="border-t">
-              <td className="px-3 py-2">
-                <Link href={`/ticket/${t.key}`} className="hover:underline">
-                  {t.key}
-                </Link>
-              </td>
-              <td className="px-3 py-2">{t.summary}</td>
-              <td className="px-3 py-2">{t.customer ?? "Unknown"}</td>
-              <td className="px-3 py-2">{t.status}</td>
-              <td className="px-3 py-2">{t.assignee ?? "—"}</td>
-              <td className="px-3 py-2">
-                <span
-                  className={
-                    isPastEta(t.promisedEta as unknown as string | null, t.statusCategory)
-                      ? "text-destructive"
-                      : ""
-                  }
-                >
-                  {t.promisedEta ? fmtDate(t.promisedEta as unknown as string) : "—"}
-                </span>
-              </td>
-              <td className="px-3 py-2">{fmtCurrency(t.baselineArr)}</td>
-            </tr>
-          ))}
+          {rows.map((t) => {
+            const age = daysBetween(t.created, new Date());
+            return (
+              <tr key={t.key} className="border-t">
+                <td className="px-3 py-2">
+                  <Link href={`/ticket/${t.key}`} className="hover:underline">
+                    {t.key}
+                  </Link>
+                </td>
+                <td className="px-3 py-2">{t.summary}</td>
+                <td className="px-3 py-2">{t.customer ?? "Unknown"}</td>
+                <td className="px-3 py-2">{t.status}</td>
+                <td className="px-3 py-2">{t.assignee ?? "—"}</td>
+                <td className="px-3 py-2">{fmtDate(t.created)}</td>
+                <td className="px-3 py-2">{age}d</td>
+                <td className="px-3 py-2">
+                  <span
+                    className={
+                      isPastEta(t.promisedEta as unknown as string | null, t.statusCategory)
+                        ? "text-destructive"
+                        : ""
+                    }
+                  >
+                    {t.promisedEta ? fmtDate(t.promisedEta as unknown as string) : "—"}
+                  </span>
+                </td>
+                <td className="px-3 py-2">{fmtCurrency(t.baselineArr)}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
