@@ -1,12 +1,24 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Cascade order = primary first. Each name must be a real Gemini API model
-// identifier (NOT the marketing label from the quota dashboard). To discover
-// what your API key has access to, run: `npm run gemini-models`.
+// Cascade order = strongest first, falling back through weaker / higher-quota
+// models. Each name must be a real Gemini API model identifier (NOT the
+// marketing label from the quota dashboard). To discover what your API key
+// has access to, run: `npm run gemini-models`.
+//
+//   Model                         RPD     RPM   Tier
+//   gemini-3-flash-preview         20      5    full Flash, gen 3 — strongest
+//   gemini-3.1-flash-lite-preview 500     15    Lite, gen 3.1 — bulk worker
+//   gemini-2.5-flash               20      5    full Flash, gen 2.5
+//   gemini-2.5-flash-lite          20     10    Lite, gen 2.5
+//   gemma-4-31b-it               1.5K     15    open-weight, larger
+//   gemma-3-27b-it              14.4K     30    open-weight, safety net
 export const MODEL_CASCADE = [
-  "gemini-3.1-flash-lite-preview", // 500 RPD, 15 RPM — primary workhorse
-  "gemini-2.5-flash-lite",         // 20 RPD, 10 RPM — fallback
-  "gemma-3-27b-it",                // 14.4K RPD, 30 RPM — high-availability floor
+  "gemini-3-flash-preview",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemma-4-31b-it",
+  "gemma-3-27b-it",
 ] as const;
 
 export type ModelName = (typeof MODEL_CASCADE)[number];
