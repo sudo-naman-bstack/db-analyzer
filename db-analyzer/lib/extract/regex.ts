@@ -1,9 +1,54 @@
-const TITLE_RE = /^\s*\[db\]\[\s*([^\]]+?)\s*\]/i;
+const DB_PREFIX_RE = /^\s*\[db\]\[\s*([^\]]+?)\s*\]/i;
+const SINGLE_BRACKET_RE = /^\s*\[\s*([^\]]+?)\s*\]/;
 const OPPORTUNITY_RE = /Opportunity\s*Info[\s\S]{0,200}?Name:\s*([^\n<]+)/i;
 
+const GENERIC_TAGS = new Set([
+  "DB",
+  "BUG",
+  "FIX",
+  "TASK",
+  "STORY",
+  "FEATURE",
+  "REQUEST",
+  "TEST",
+  "WIP",
+  "TODO",
+  "HOTFIX",
+  "BLOCKER",
+  "P0",
+  "P1",
+  "P2",
+  "P3",
+  "P4",
+  "MUST",
+  "SHOULD",
+  "NICE",
+  "URGENT",
+  "DRAFT",
+  "TM",
+]);
+
+function cleanCustomerName(raw: string): string | null {
+  let v = raw.trim();
+  // Strip trailing punctuation noise like "Primark."
+  v = v.replace(/[.,;:!?]+$/, "").trim();
+  if (!v) return null;
+  if (GENERIC_TAGS.has(v.toUpperCase())) return null;
+  return v;
+}
+
 export function extractFromTitle(title: string): string | null {
-  const m = title.match(TITLE_RE);
-  return m ? m[1].trim() : null;
+  // Legacy [DB][CUSTOMER] form
+  const dbMatch = title.match(DB_PREFIX_RE);
+  if (dbMatch) {
+    return cleanCustomerName(dbMatch[1]);
+  }
+  // Modern [CUSTOMER] form
+  const singleMatch = title.match(SINGLE_BRACKET_RE);
+  if (singleMatch) {
+    return cleanCustomerName(singleMatch[1]);
+  }
+  return null;
 }
 
 export function extractFromOpportunity(description: string): string | null {
