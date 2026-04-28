@@ -76,6 +76,46 @@
         ]
       }
     }
+    ,
+    {
+      "key": "TM-50001",
+      "fields": {
+        "summary": "No DB prefix in title",
+        "status": { "name": "New Item", "statusCategory": { "key": "new" } },
+        "assignee": null,
+        "created": "2026-04-20T10:00:00.000+0000",
+        "updated": "2026-04-21T10:00:00.000+0000",
+        "description": {
+          "type": "doc",
+          "version": 1,
+          "content": [
+            {
+              "type": "heading",
+              "attrs": { "level": 3 },
+              "content": [{ "type": "text", "text": "Opportunity Info" }]
+            },
+            {
+              "type": "paragraph",
+              "content": [{ "type": "text", "text": "Name: Q2" }]
+            },
+            {
+              "type": "paragraph",
+              "content": [{ "type": "text", "text": "Link: https://example.com" }]
+            }
+          ]
+        },
+        "customfield_10110": null,
+        "customfield_17291": null,
+        "customfield_10693": 100000,
+        "customfield_10694": null,
+        "customfield_10746": null,
+        "customfield_11081": null,
+        "customfield_10493": "Test Management",
+        "customfield_10204": null,
+        "customfield_10147": null
+      },
+      "changelog": { "histories": [] }
+    }
   ],
   "isLast": true,
   "nextPageToken": null

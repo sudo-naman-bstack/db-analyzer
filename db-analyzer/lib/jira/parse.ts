@@ -25,6 +25,35 @@ export interface ParsedIssue {
   }>;
 }
 
+function adfToText(node: any): string {
+  if (!node) return "";
+  if (typeof node === "string") return node;
+  let text = "";
+  if (typeof node.text === "string") text += node.text;
+  if (Array.isArray(node.content)) {
+    for (const child of node.content) {
+      text += adfToText(child);
+      if (
+        child &&
+        (child.type === "paragraph" ||
+          child.type === "heading" ||
+          child.type === "listItem" ||
+          child.type === "blockquote" ||
+          child.type === "tableRow")
+      ) {
+        text += "\n";
+      }
+    }
+  }
+  return text;
+}
+
+function descriptionToString(raw: unknown): string {
+  if (typeof raw === "string") return raw;
+  if (raw && typeof raw === "object") return adfToText(raw);
+  return "";
+}
+
 function readSelectValue(v: unknown): string | null {
   if (v == null) return null;
   if (Array.isArray(v)) {
@@ -56,7 +85,7 @@ export function parseIssue(raw: any): ParsedIssue {
     assignee: f.assignee?.displayName ?? null,
     created: f.created,
     updated: f.updated,
-    description: typeof f.description === "string" ? f.description : "",
+    description: descriptionToString(f.description),
     promisedEta: f[JIRA_FIELDS.promisedEta] ?? null,
     customerExpectedEta: f[JIRA_FIELDS.customerExpectedEta] ?? null,
     baselineArr: readNumber(f[JIRA_FIELDS.baselineArr]),
