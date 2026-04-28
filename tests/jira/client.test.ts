@@ -23,7 +23,7 @@ describe("fetchAllDealblockerIssues", () => {
     vi.stubEnv("JIRA_PROJECT_KEY", "TM");
 
     const issues = await fetchAllDealblockerIssues();
-    expect(issues).toHaveLength(2);
+    expect(issues).toHaveLength(3);
     expect(issues[0].key).toBe("TM-21858");
     expect(issues[0].rawChangelog.length).toBeGreaterThan(0);
   });

@@ -46,10 +46,10 @@ describe("runRefresh", () => {
 
     const deps = baseDeps();
     const result = await runRefresh({ trigger: "manual", maxLlmCalls: 10, deps });
-    expect(result.ticketCount).toBe(2);
+    expect(result.ticketCount).toBe(3);
     expect(result.errors).toBe(0);
-    expect(deps.upsertTicket).toHaveBeenCalledTimes(2);
-    // Both fixture tickets have [DB][CUSTOMER] titles → regex_title, so LLM is never called
+    expect(deps.upsertTicket).toHaveBeenCalledTimes(3);
+    // First two fixture tickets have [DB][CUSTOMER] titles → regex_title; third uses ADF desc → regex_desc; no LLM needed
     expect(deps.llm).not.toHaveBeenCalled();
   });
 

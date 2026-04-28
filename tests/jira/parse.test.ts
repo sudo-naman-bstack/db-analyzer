@@ -26,4 +26,11 @@ describe("parseIssue", () => {
     expect(parsed.dbCategory).toBeNull();
     expect(parsed.assignee).toBeNull();
   });
+
+  it("flattens ADF description objects into searchable text", () => {
+    const issue = (fixture as any).issues[2];
+    const parsed = parseIssue(issue);
+    expect(parsed.description).toContain("Opportunity Info");
+    expect(parsed.description).toContain("Name: Q2");
+  });
 });
