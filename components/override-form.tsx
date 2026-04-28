@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 
 export function OverrideForm({ issueKey }: { issueKey: string }) {
   const [customer, setCustomer] = useState("");
@@ -27,9 +28,16 @@ export function OverrideForm({ issueKey }: { issueKey: string }) {
         value={customer}
         onChange={(e) => setCustomer(e.target.value)}
         placeholder="Customer name"
-        className="rounded border px-2 py-1 text-sm"
+        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+        onKeyDown={(e) => e.key === "Enter" && submit()}
       />
-      <Button size="sm" onClick={submit} disabled={pending}>
+      <Button
+        size="sm"
+        onClick={submit}
+        disabled={pending || !customer.trim()}
+        className="gap-1"
+      >
+        <Check className="h-3.5 w-3.5" />
         {pending ? "Saving…" : "Save"}
       </Button>
     </div>
