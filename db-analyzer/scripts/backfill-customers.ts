@@ -61,17 +61,9 @@ async function main() {
   let stillUnknown = 0;
   let llmCalls = 0;
 
-  // Gemini 3.1 Flash Lite is rate-limited to 15 RPM. Sleep 4.5s between
-  // LLM calls to stay just under 14 RPM and avoid cascading to weaker
-  // models. Regex-only resolutions (most after the [Customer] regex
-  // landed) skip the sleep and run as fast as possible.
-  const LLM_SLEEP_MS = 4500;
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
   for (let i = 0; i < rows.length; i++) {
     const t = rows[i];
     const description = t.description_raw ?? "";
-    let usedLlm = false;
     const result = await resolveCustomer({
       title: t.summary,
       description,
@@ -79,7 +71,6 @@ async function main() {
       cache: null,
       llm: async (input) => {
         llmCalls += 1;
-        usedLlm = true;
         return extractCustomerWithLLM(input);
       },
     });
@@ -92,7 +83,8 @@ async function main() {
     }
     if (result.source === "llm") llmHits += 1;
     else regexHits += 1;
-    console.log(`${tag}  -> ${result.customer} (${result.source})`);
+    const via = result.modelUsed ? `${result.source}:${result.modelUsed}` : result.source;
+    console.log(`${tag}  -> ${result.customer} (${via})`);
 
     await pool.query(
       `UPDATE tickets SET customer = $1, customer_source = $2 WHERE key = $3`,
@@ -118,9 +110,6 @@ async function main() {
       );
     }
 
-    if (usedLlm && i < rows.length - 1) {
-      await sleep(LLM_SLEEP_MS);
-    }
   }
 
   console.log("");
