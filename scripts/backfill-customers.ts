@@ -83,8 +83,7 @@ async function main() {
     }
     if (result.source === "llm") llmHits += 1;
     else regexHits += 1;
-    const via = result.modelUsed ? `${result.source}:${result.modelUsed}` : result.source;
-    console.log(`${tag}  -> ${result.customer} (${via})`);
+    console.log(`${tag}  -> ${result.customer} (${result.source})`);
 
     await pool.query(
       `UPDATE tickets SET customer = $1, customer_source = $2 WHERE key = $3`,
