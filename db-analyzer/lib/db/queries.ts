@@ -8,8 +8,22 @@ export async function getOverviewKpis() {
     .from(tickets)
     .where(sql`${tickets.statusCategory} <> 'done'`);
 
-  const [arr] = await db
-    .select({ total: sql<string>`COALESCE(SUM(${tickets.baselineArr}), 0)` })
+  // ARR exposed: each customer's ARR counted ONCE (baseline_arr is the
+  // customer's overall BrowserStack ARR, repeated on every ticket).
+  const arrResult = await db.execute<{ total: string | number | null }>(sql`
+    WITH per_customer AS (
+      SELECT customer, MAX(baseline_arr) AS arr
+      FROM tickets
+      WHERE status_category <> 'done'
+      GROUP BY customer
+    )
+    SELECT COALESCE(SUM(arr), 0) AS total FROM per_customer
+  `);
+  const arrTotal = arrResult.rows[0]?.total ?? 0;
+
+  // iACV at risk: per-ticket incremental ACV summed across open dealblockers.
+  const [iacv] = await db
+    .select({ total: sql<string>`COALESCE(SUM(${tickets.incrementalAcv}), 0)` })
     .from(tickets)
     .where(sql`${tickets.statusCategory} <> 'done'`);
 
@@ -36,22 +50,26 @@ export async function getOverviewKpis() {
 
   return {
     openCount: openCount?.n ?? 0,
-    arrAtRisk: Number(arr?.total ?? 0),
+    arrExposed: Number(arrTotal),
+    iacvAtRisk: Number(iacv?.total ?? 0),
     pastEtaCount: pastEta?.n ?? 0,
     medianClosureDays: median?.median_days ?? null,
   };
 }
 
 export async function getCustomerLeaderboard(limit = 50) {
+  // ARR is per-customer (same value across all their tickets) — use MAX.
+  // iACV is per-ticket — use SUM.
   return db
     .select({
       customer: tickets.customer,
       n: count(),
-      arr: sql<string>`COALESCE(SUM(${tickets.baselineArr}), 0)`,
+      arr: sql<string>`COALESCE(MAX(${tickets.baselineArr}), 0)`,
+      iacv: sql<string>`COALESCE(SUM(${tickets.incrementalAcv}), 0)`,
     })
     .from(tickets)
     .groupBy(tickets.customer)
-    .orderBy(desc(count()))
+    .orderBy(desc(count()), desc(sql`COALESCE(MAX(${tickets.baselineArr}), 0)`))
     .limit(limit);
 }
 
