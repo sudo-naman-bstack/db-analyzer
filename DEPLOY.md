@@ -33,15 +33,23 @@ In **Settings → Environment Variables**, add:
 - `JIRA_PROJECT_KEY` = `TM`
 - `GEMINI_API_KEY` = (create at https://aistudio.google.com/apikey)
 - `CRON_SECRET` = (any random string — generate with `openssl rand -hex 32`)
+- `APP_PASSWORD` = (the password your team will use to sign in — keep it strong)
 - `TIMEZONE` = `Asia/Kolkata`
 
-`POSTGRES_URL` is auto-injected by Vercel — don't set it manually.
+`POSTGRES_URL` is auto-injected by Vercel once you provision the database in step 3 — don't set it manually.
 
-## 5. Enable password protection
+After adding env vars, **redeploy** the project (Deployments → ... → Redeploy) so the app picks them up.
 
-- **Settings → Deployment Protection** → toggle on **Password Protection**
-- Set a shared password
-- Share with Director
+## 5. App-level password (Hobby plan)
+
+Vercel's built-in Password Protection is Pro-only. Instead, this dashboard ships with its own login:
+
+- The `APP_PASSWORD` env var (set in step 4) is the shared password.
+- Anyone visiting the dashboard hits a `/login` screen and signs in.
+- Successful login sets an HTTP-only signed cookie; the cookie lasts 30 days.
+- A "Sign out" link in the top nav clears the cookie.
+
+Share the password with your director offline (Slack DM, 1Password, etc.). Treat `APP_PASSWORD` like any other secret — rotate by updating the env var in Vercel and redeploying.
 
 ## 6. Apply DB schema
 

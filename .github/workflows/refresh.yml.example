@@ -3,9 +3,8 @@ name: Refresh dashboard
 # To enable:
 # 1. Rename this file from refresh.yml.example to refresh.yml
 # 2. In repo Settings → Secrets and variables → Actions, add:
-#      DASHBOARD_URL    = https://<your-vercel-app>.vercel.app
-#      VERCEL_BYPASS    = (if password protection is on, use a Protection Bypass token
-#                         from Vercel project Settings → Deployment Protection)
+#      DASHBOARD_URL  = https://<your-vercel-app>.vercel.app
+#      CRON_SECRET    = same value as the CRON_SECRET env var on Vercel
 # 3. Commit and push. GitHub will start running the schedule.
 
 on:
@@ -21,9 +20,8 @@ jobs:
       - name: Trigger /api/refresh
         run: |
           set -e
-          URL="${{ secrets.DASHBOARD_URL }}/api/refresh?trigger=manual"
-          if [ -n "${{ secrets.VERCEL_BYPASS }}" ]; then
-            URL="${URL}&x-vercel-protection-bypass=${{ secrets.VERCEL_BYPASS }}"
-          fi
-          curl -sS -X POST -f "$URL" -o /tmp/refresh.json
+          curl -sS -X POST -f \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.DASHBOARD_URL }}/api/refresh" \
+            -o /tmp/refresh.json
           cat /tmp/refresh.json

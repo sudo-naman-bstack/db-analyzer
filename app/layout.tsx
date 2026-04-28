@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LogoutLink } from "@/components/logout-link";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/customers" className="hover:text-foreground">Customers</a>
               <a href="/closures" className="hover:text-foreground">Closures</a>
               <a href="/admin/needs-review" className="hover:text-foreground">Needs review</a>
+              <LogoutLink />
             </nav>
           </header>
           <main>{children}</main>
