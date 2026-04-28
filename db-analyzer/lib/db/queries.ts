@@ -24,7 +24,7 @@ export async function getOverviewKpis() {
       ),
     );
 
-  const [median] = await db.execute<{ median_days: number | null }>(sql`
+  const medianResult = await db.execute<{ median_days: number | null }>(sql`
     SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (
       ORDER BY EXTRACT(EPOCH FROM (done_at - created)) / 86400
     ) AS median_days
@@ -32,6 +32,7 @@ export async function getOverviewKpis() {
     WHERE done_at IS NOT NULL
       AND done_at >= NOW() - INTERVAL '90 days'
   `);
+  const median = medianResult.rows[0];
 
   return {
     openCount: openCount?.n ?? 0,
