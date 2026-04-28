@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
-import "dotenv/config";
+import { config } from "dotenv";
+config({ path: ".env.local" });
 import { Pool } from "pg";
 import {
   resolveCustomer,
@@ -60,9 +61,17 @@ async function main() {
   let stillUnknown = 0;
   let llmCalls = 0;
 
+  // Gemini 3.1 Flash Lite is rate-limited to 15 RPM. Sleep 4.5s between
+  // LLM calls to stay just under 14 RPM and avoid cascading to weaker
+  // models. Regex-only resolutions (most after the [Customer] regex
+  // landed) skip the sleep and run as fast as possible.
+  const LLM_SLEEP_MS = 4500;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
   for (let i = 0; i < rows.length; i++) {
     const t = rows[i];
     const description = t.description_raw ?? "";
+    let usedLlm = false;
     const result = await resolveCustomer({
       title: t.summary,
       description,
@@ -70,6 +79,7 @@ async function main() {
       cache: null,
       llm: async (input) => {
         llmCalls += 1;
+        usedLlm = true;
         return extractCustomerWithLLM(input);
       },
     });
@@ -106,6 +116,10 @@ async function main() {
           result.modelUsed,
         ],
       );
+    }
+
+    if (usedLlm && i < rows.length - 1) {
+      await sleep(LLM_SLEEP_MS);
     }
   }
 
