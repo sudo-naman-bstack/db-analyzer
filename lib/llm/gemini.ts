@@ -1,9 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 
+// Cascade order = primary first. Each name must be a real Gemini API model
+// identifier (NOT the marketing label from the quota dashboard). To discover
+// what your API key has access to, run: `npm run gemini-models`.
 export const MODEL_CASCADE = [
-  "gemini-3.1-flash-lite",
-  "gemini-3-flash",
   "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
   "gemma-3-27b-it",
 ] as const;
 
