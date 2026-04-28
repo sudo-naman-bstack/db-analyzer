@@ -114,3 +114,28 @@ export async function getLastRefreshRun() {
   const [row] = await db.select().from(refreshRuns).orderBy(desc(refreshRuns.startedAt)).limit(1);
   return row ?? null;
 }
+
+export type TicketFilter = "open" | "past-eta" | "done" | "all";
+
+export async function getTicketsByFilter(filter: TicketFilter, customer?: string) {
+  const conditions: any[] = [];
+  if (filter === "open") {
+    conditions.push(sql`${tickets.statusCategory} <> 'done'`);
+  } else if (filter === "past-eta") {
+    conditions.push(
+      sql`${tickets.statusCategory} <> 'done'`,
+      isNotNull(tickets.promisedEta),
+      lt(tickets.promisedEta, sql`CURRENT_DATE`),
+    );
+  } else if (filter === "done") {
+    conditions.push(isNotNull(tickets.doneAt));
+  }
+  if (customer) {
+    conditions.push(eq(tickets.customer, customer));
+  }
+  return db
+    .select()
+    .from(tickets)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(tickets.updated));
+}
