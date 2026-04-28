@@ -7,7 +7,7 @@ import {
   upsertExtractionCache,
   recordRefreshRun,
 } from "@/lib/db/upserts";
-import { getOverride, getCachedExtraction } from "@/lib/db/queries";
+import { getOverride, getCachedExtraction, getLastSuccessfulRefreshTime } from "@/lib/db/queries";
 import { extractCustomerWithLLM } from "@/lib/llm/gemini";
 import { COOKIE_NAME, verifyAuthCookie } from "@/lib/auth";
 
@@ -29,6 +29,7 @@ async function cookieAuthorized(): Promise<boolean> {
 export async function POST(req: Request) {
   const url = new URL(req.url);
   const trigger = url.searchParams.get("trigger") === "manual" ? "manual" : "cron";
+  const force = url.searchParams.get("force") === "1";
 
   if (trigger === "cron") {
     if (!bearerAuthorized(req)) {
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
   const result = await runRefresh({
     trigger,
     maxLlmCalls: 10,
+    force,
     deps: {
       upsertTicket,
       insertStatusTransitionsIfNew,
@@ -57,6 +59,7 @@ export async function POST(req: Request) {
       },
       llm: extractCustomerWithLLM,
       categoryOf: () => "indeterminate", // overridden by learned map inside runRefresh
+      getLastSuccessfulRefreshTime,
     },
   });
 
