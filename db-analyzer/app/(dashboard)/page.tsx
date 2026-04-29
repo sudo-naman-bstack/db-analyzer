@@ -9,9 +9,8 @@ import {
 import { KpiCard } from "@/components/kpi-card";
 import { RefreshButton } from "@/components/refresh-button";
 import { SectionHeader } from "@/components/section-header";
-import { CustomerAccordion } from "@/components/customer-accordion";
+import { CustomersTable } from "@/components/customers-table";
 import { AgingBreakdown } from "@/components/aging-breakdown";
-import { ExpandOnHash } from "@/components/expand-on-hash";
 import { fmtCurrency, fmtDate } from "@/lib/format";
 import {
   AlertTriangle,
@@ -42,8 +41,6 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-8">
-      <ExpandOnHash />
-
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -199,15 +196,15 @@ export default async function OverviewPage() {
         </div>
       </section>
 
-      {/* All customers — expandable */}
+      {/* All customers */}
       <section>
         <SectionHeader
           icon={<Users className="h-4 w-4" />}
           title="Customers"
-          description={`${accordion.grouped.length} customers · click to expand tickets`}
+          description={`${accordion.grouped.length} customers · click a customer to view their tickets`}
           className="mb-4"
         />
-        <CustomerAccordion grouped={accordion.grouped} byCustomer={accordion.byCustomer} />
+        <CustomersTable rows={accordion.grouped} />
       </section>
     </div>
   );

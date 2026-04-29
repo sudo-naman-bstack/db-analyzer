@@ -1,23 +1,21 @@
 import { getCustomerAccordionData } from "@/lib/db/queries";
-import { ExpandOnHash } from "@/components/expand-on-hash";
-import { CustomerAccordion } from "@/components/customer-accordion";
+import { CustomersTable } from "@/components/customers-table";
 import { SectionHeader } from "@/components/section-header";
 import { Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {
-  const { grouped, byCustomer } = await getCustomerAccordionData();
+  const { grouped } = await getCustomerAccordionData();
 
   return (
     <div className="space-y-6">
-      <ExpandOnHash />
       <SectionHeader
         icon={<Users className="h-4 w-4" />}
         title="By customer"
-        description={`${grouped.length} customers with dealblocking tickets`}
+        description={`${grouped.length} customers · click a customer to view their tickets`}
       />
-      <CustomerAccordion grouped={grouped} byCustomer={byCustomer} />
+      <CustomersTable rows={grouped} />
     </div>
   );
 }
