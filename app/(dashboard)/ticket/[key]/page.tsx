@@ -3,7 +3,15 @@ import { fmtDate, fmtCurrency, daysBetween } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { EtaBadge } from "@/components/eta-badge";
 import { notFound } from "next/navigation";
-import { ExternalLink, ArrowRight } from "lucide-react";
+import { ExternalLink, ArrowRight, MessageSquare } from "lucide-react";
+
+function extractSlackUrls(description: string | null): string[] {
+  if (!description) return [];
+  const re = /https?:\/\/[\w-]*\.?slack\.com\/[^\s<>"']+/gi;
+  const matches = description.match(re) ?? [];
+  // Dedup while preserving order
+  return Array.from(new Set(matches));
+}
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +30,7 @@ export default async function TicketPage({ params }: { params: Promise<{ key: st
   if (!ticket) notFound();
   const history = await getStatusHistory(key);
   const jiraUrl = `${process.env.JIRA_BASE_URL}/browse/${ticket.key}`;
+  const slackUrls = extractSlackUrls(ticket.descriptionRaw);
   const daysOpen = ticket.doneAt
     ? daysBetween(ticket.created, ticket.doneAt)
     : daysBetween(ticket.created, new Date());
@@ -102,6 +111,30 @@ export default async function TicketPage({ params }: { params: Promise<{ key: st
           </MetaItem>
         </dl>
       </div>
+
+      {/* Slack threads */}
+      {slackUrls.length > 0 && (
+        <section>
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
+            Slack threads
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {slackUrls.map((url, i) => (
+              <a
+                key={url}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Slack thread {i + 1}
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Status timeline */}
       <section>

@@ -12,10 +12,11 @@ const FILTER_LABELS: Record<TicketFilter, string> = {
   done: "Closed dealblockers",
   "no-eta": "Open without Promised ETA",
   unassigned: "Open and unassigned",
+  stale: "Stale (no update in 14+ days)",
   all: "All dealblockers",
 };
 
-const VALID_FILTERS: TicketFilter[] = ["open", "past-eta", "done", "no-eta", "unassigned", "all"];
+const VALID_FILTERS: TicketFilter[] = ["open", "past-eta", "done", "no-eta", "unassigned", "stale", "all"];
 
 export default async function TicketsPage({
   searchParams,
@@ -56,6 +57,7 @@ export default async function TicketsPage({
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Customer</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Assignee</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">CE</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Created</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Age</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Promised ETA</th>
@@ -92,6 +94,7 @@ export default async function TicketsPage({
                       <StatusBadge status={t.status} />
                     </td>
                     <td className="px-4 py-3 text-slate-600">{t.assignee ?? <span className="text-slate-400">—</span>}</td>
+                    <td className="px-4 py-3 text-slate-600">{t.ceName ?? <span className="text-slate-400">—</span>}</td>
                     <td className="px-4 py-3 tabular-nums text-slate-500">{fmtDate(t.created)}</td>
                     <td className={`px-4 py-3 text-right tabular-nums ${ageColor}`}>{age}d</td>
                     <td className="px-4 py-3">

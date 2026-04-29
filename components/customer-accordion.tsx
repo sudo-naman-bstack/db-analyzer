@@ -7,6 +7,7 @@ import type { Ticket } from "@/lib/db/schema";
 export interface CustomerGroup {
   customer: string | null;
   n: number;
+  openN: number;
   arr: string;
   iacv: string;
 }
@@ -23,7 +24,7 @@ export function CustomerAccordion({
       {grouped.map((g) => {
         const customer = g.customer ?? "Unknown";
         const rows = byCustomer.get(customer) ?? [];
-        const openCount = rows.filter((t) => t.statusCategory !== "done").length;
+        const openCount = g.openN;
 
         return (
           <details
@@ -67,6 +68,7 @@ export function CustomerAccordion({
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Key</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Summary</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">CE</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Promised ETA</th>
                     <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">ARR</th>
                   </tr>
@@ -90,6 +92,9 @@ export function CustomerAccordion({
                       </td>
                       <td className="px-4 py-2.5">
                         <StatusBadge status={t.status} />
+                      </td>
+                      <td className="px-4 py-2.5 text-slate-600">
+                        {t.ceName ?? <span className="text-slate-400">—</span>}
                       </td>
                       <td className="px-4 py-2.5">
                         <EtaBadge

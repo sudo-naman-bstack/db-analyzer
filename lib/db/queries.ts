@@ -138,12 +138,17 @@ export async function getCustomerAccordionData() {
     .select({
       customer: tickets.customer,
       n: count(),
+      openN: sql<number>`COUNT(*) FILTER (WHERE ${tickets.statusCategory} <> 'done')::int`,
       arr: sql<string>`COALESCE(MAX(${tickets.baselineArr}), 0)`,
       iacv: sql<string>`COALESCE(SUM(${tickets.incrementalAcv}), 0)`,
     })
     .from(tickets)
     .groupBy(tickets.customer)
-    .orderBy(desc(count()), desc(sql`COALESCE(MAX(${tickets.baselineArr}), 0)`));
+    .orderBy(
+      desc(sql`COUNT(*) FILTER (WHERE ${tickets.statusCategory} <> 'done')`),
+      desc(count()),
+      desc(sql`COALESCE(MAX(${tickets.baselineArr}), 0)`),
+    );
 
   const all = await db.select().from(tickets).orderBy(desc(tickets.updated));
   const byCustomer = new Map<string, typeof all>();
@@ -165,7 +170,7 @@ export async function getLastSuccessfulRefreshTime(): Promise<Date | null> {
   return row?.startedAt ?? null;
 }
 
-export type TicketFilter = "open" | "past-eta" | "done" | "no-eta" | "unassigned" | "all";
+export type TicketFilter = "open" | "past-eta" | "done" | "no-eta" | "unassigned" | "stale" | "all";
 
 export async function getTicketsByFilter(filter: TicketFilter, customer?: string) {
   const conditions: any[] = [];
@@ -189,15 +194,20 @@ export async function getTicketsByFilter(filter: TicketFilter, customer?: string
       sql`${tickets.statusCategory} <> 'done'`,
       sql`${tickets.assignee} IS NULL`,
     );
+  } else if (filter === "stale") {
+    conditions.push(
+      sql`${tickets.statusCategory} <> 'done'`,
+      sql`${tickets.updated} <= NOW() - INTERVAL '14 days'`,
+    );
   }
   if (customer) {
     conditions.push(eq(tickets.customer, customer));
   }
-  // Triage filters (no-eta, unassigned, past-eta) sort by oldest-first
+  // Triage filters (no-eta, unassigned, past-eta, stale) sort by oldest-first
   // since age is the actionable signal. Other views show most-recently
   // updated first.
   const orderBy =
-    filter === "no-eta" || filter === "unassigned" || filter === "past-eta"
+    filter === "no-eta" || filter === "unassigned" || filter === "past-eta" || filter === "stale"
       ? tickets.created
       : desc(tickets.updated);
   return db
@@ -226,5 +236,41 @@ export async function getTriageCounts() {
         sql`${tickets.assignee} IS NULL`,
       ),
     );
-  return { noEta: noEta?.n ?? 0, unassigned: unassigned?.n ?? 0 };
+  const [stale] = await db
+    .select({ n: count() })
+    .from(tickets)
+    .where(
+      and(
+        sql`${tickets.statusCategory} <> 'done'`,
+        sql`${tickets.updated} <= NOW() - INTERVAL '14 days'`,
+      ),
+    );
+  return { noEta: noEta?.n ?? 0, unassigned: unassigned?.n ?? 0, stale: stale?.n ?? 0 };
+}
+
+export async function getAgingBuckets() {
+  const result = await db.execute<{
+    b1: number;
+    b2: number;
+    b3: number;
+    b4: number;
+    b5: number;
+  }>(sql`
+    SELECT
+      COUNT(*) FILTER (WHERE NOW() - created <= INTERVAL '7 days')::int AS b1,
+      COUNT(*) FILTER (WHERE NOW() - created > INTERVAL '7 days' AND NOW() - created <= INTERVAL '14 days')::int AS b2,
+      COUNT(*) FILTER (WHERE NOW() - created > INTERVAL '14 days' AND NOW() - created <= INTERVAL '30 days')::int AS b3,
+      COUNT(*) FILTER (WHERE NOW() - created > INTERVAL '30 days' AND NOW() - created <= INTERVAL '60 days')::int AS b4,
+      COUNT(*) FILTER (WHERE NOW() - created > INTERVAL '60 days')::int AS b5
+    FROM tickets
+    WHERE status_category <> 'done'
+  `);
+  const r = result.rows[0];
+  return {
+    "0-7d": Number(r?.b1 ?? 0),
+    "8-14d": Number(r?.b2 ?? 0),
+    "15-30d": Number(r?.b3 ?? 0),
+    "31-60d": Number(r?.b4 ?? 0),
+    "60d+": Number(r?.b5 ?? 0),
+  };
 }
