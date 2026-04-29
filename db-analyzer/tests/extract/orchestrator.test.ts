@@ -103,4 +103,18 @@ describe("resolveCustomer", () => {
     expect(r).toEqual({ customer: "Unknown", source: "unknown", modelUsed: null });
     expect(llm).not.toHaveBeenCalled();
   });
+
+  it("uses cached unknown verdict without re-trying LLM", async () => {
+    const llm = vi.fn();
+    const r = await resolveCustomer({
+      title: "no prefix",
+      description: "no opp info",
+      override: null,
+      cache: { customer: "Unknown", source: "unknown", contentHash: "abc" },
+      currentHash: "abc",
+      llm,
+    });
+    expect(r).toEqual({ customer: "Unknown", source: "unknown", modelUsed: null });
+    expect(llm).not.toHaveBeenCalled();
+  });
 });

@@ -5,7 +5,7 @@ export type CustomerSource = "override" | "regex_title" | "regex_desc" | "llm" |
 
 export interface CacheEntry {
   customer: string;
-  source: Exclude<CustomerSource, "override" | "unknown">;
+  source: Exclude<CustomerSource, "override">;
   contentHash: string;
 }
 

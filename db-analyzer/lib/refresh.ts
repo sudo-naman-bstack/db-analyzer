@@ -26,6 +26,8 @@ export interface RefreshResult {
   newOrChanged: number;
   llmCalls: number;
   errors: number;
+  hasMore: boolean;
+  remainingLlm: number;
 }
 
 export interface RefreshOptions {
@@ -41,6 +43,7 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
   let llmCalls = 0;
   let errors = 0;
   let newOrChanged = 0;
+  let llmDeferred = 0;
   const errorMessages: string[] = [];
 
   let since: Date | undefined;
@@ -75,10 +78,9 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
       const override = await deps.getOverride(issue.key);
       const cache = await deps.getCachedExtraction(issue.key);
       const hash = contentHash(issue.summary, issue.description);
-      const cacheEntry: CacheEntry | null =
-        cache && (cache.source === "regex_title" || cache.source === "regex_desc" || cache.source === "llm")
-          ? { customer: cache.customer, source: cache.source, contentHash: cache.contentHash }
-          : null;
+      const cacheEntry: CacheEntry | null = cache
+        ? { customer: cache.customer, source: cache.source as CacheEntry["source"], contentHash: cache.contentHash }
+        : null;
 
       const llmBudgetExhausted = llmCalls >= opts.maxLlmCalls;
       const wrappedLlm = async (input: ExtractInput): Promise<ExtractResult | null> => {
@@ -124,7 +126,7 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
         await deps.insertStatusTransitionsIfNew(transitions);
       }
 
-      if (resolved.source !== "override" && resolved.source !== "unknown") {
+      if (resolved.source !== "override") {
         await deps.upsertExtractionCache({
           issueKey: issue.key,
           contentHash: hash,
@@ -133,6 +135,10 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
           modelUsed: resolved.modelUsed,
           extractedAt: startedAt,
         });
+      }
+
+      if (resolved.source === "unknown" && llmCalls >= opts.maxLlmCalls) {
+        llmDeferred += 1;
       }
 
       newOrChanged += 1;
@@ -153,5 +159,12 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
     trigger: opts.trigger,
   });
 
-  return { ticketCount: issues.length, newOrChanged, llmCalls, errors };
+  return {
+    ticketCount: issues.length,
+    newOrChanged,
+    llmCalls,
+    errors,
+    hasMore: llmDeferred > 0,
+    remainingLlm: llmDeferred,
+  };
 }
