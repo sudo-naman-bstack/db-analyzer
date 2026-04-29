@@ -4,11 +4,13 @@ import {
   getLastRefreshRun,
   getNeedsReview,
   getTriageCounts,
+  getAgingBuckets,
 } from "@/lib/db/queries";
 import { KpiCard } from "@/components/kpi-card";
 import { RefreshButton } from "@/components/refresh-button";
 import { SectionHeader } from "@/components/section-header";
 import { CustomerAccordion } from "@/components/customer-accordion";
+import { AgingBreakdown } from "@/components/aging-breakdown";
 import { ExpandOnHash } from "@/components/expand-on-hash";
 import { fmtCurrency, fmtDate } from "@/lib/format";
 import {
@@ -27,12 +29,13 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const [kpis, accordion, lastRun, needsReview, triage] = await Promise.all([
+  const [kpis, accordion, lastRun, needsReview, triage, aging] = await Promise.all([
     getOverviewKpis(),
     getCustomerAccordionData(),
     getLastRefreshRun(),
     getNeedsReview(),
     getTriageCounts(),
+    getAgingBuckets(),
   ]);
 
   return (
@@ -134,6 +137,19 @@ export default async function OverviewPage() {
             </div>
           </Link>
 
+          <Link
+            href="/tickets?filter=stale"
+            className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
+              <Clock className="h-4 w-4" />
+            </span>
+            <div className="text-sm">
+              <span className="font-bold text-slate-900">{triage.stale}</span>{" "}
+              <span className="text-slate-500">stale (no update 14d+)</span>
+            </div>
+          </Link>
+
           {needsReview.length > 0 && (
             <Link
               href="/admin/needs-review"
@@ -148,6 +164,19 @@ export default async function OverviewPage() {
               </div>
             </Link>
           )}
+        </div>
+      </section>
+
+      {/* Open ticket age breakdown */}
+      <section>
+        <SectionHeader
+          icon={<Clock className="h-4 w-4" />}
+          title="Open ticket age"
+          description={`Distribution by days since creation`}
+          className="mb-4"
+        />
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <AgingBreakdown buckets={aging} />
         </div>
       </section>
 
