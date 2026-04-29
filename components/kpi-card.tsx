@@ -46,21 +46,22 @@ export function KpiCard({ label, value, hint, icon, variant = "default" }: KpiCa
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md",
+        "group relative flex h-full flex-col overflow-hidden rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md",
         styles.card
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-1 items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col">
           <p className={cn("text-xs font-semibold uppercase tracking-wider", styles.label)}>
             {label}
           </p>
           <p className={cn("mt-2 text-3xl font-bold tabular-nums tracking-tight", styles.value)}>
             {value}
           </p>
-          {hint && (
-            <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
-          )}
+          {/* Reserve hint row so cards align even when hint is empty */}
+          <p className="mt-1 min-h-[1rem] text-xs text-muted-foreground">
+            {hint ?? " "}
+          </p>
         </div>
         {icon && (
           <span

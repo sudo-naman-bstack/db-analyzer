@@ -133,6 +133,28 @@ export async function getLastRefreshRun() {
   return row ?? null;
 }
 
+export async function getCustomerAccordionData() {
+  const grouped = await db
+    .select({
+      customer: tickets.customer,
+      n: count(),
+      arr: sql<string>`COALESCE(MAX(${tickets.baselineArr}), 0)`,
+      iacv: sql<string>`COALESCE(SUM(${tickets.incrementalAcv}), 0)`,
+    })
+    .from(tickets)
+    .groupBy(tickets.customer)
+    .orderBy(desc(count()), desc(sql`COALESCE(MAX(${tickets.baselineArr}), 0)`));
+
+  const all = await db.select().from(tickets).orderBy(desc(tickets.updated));
+  const byCustomer = new Map<string, typeof all>();
+  for (const t of all) {
+    const key = t.customer ?? "Unknown";
+    if (!byCustomer.has(key)) byCustomer.set(key, []);
+    byCustomer.get(key)!.push(t);
+  }
+  return { grouped, byCustomer };
+}
+
 export async function getLastSuccessfulRefreshTime(): Promise<Date | null> {
   const [row] = await db
     .select({ startedAt: refreshRuns.startedAt })

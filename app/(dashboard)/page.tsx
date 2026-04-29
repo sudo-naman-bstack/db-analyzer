@@ -1,7 +1,15 @@
-import { getOverviewKpis, getCustomerLeaderboard, getLastRefreshRun, getNeedsReview, getTriageCounts } from "@/lib/db/queries";
+import {
+  getOverviewKpis,
+  getCustomerAccordionData,
+  getLastRefreshRun,
+  getNeedsReview,
+  getTriageCounts,
+} from "@/lib/db/queries";
 import { KpiCard } from "@/components/kpi-card";
 import { RefreshButton } from "@/components/refresh-button";
 import { SectionHeader } from "@/components/section-header";
+import { CustomerAccordion } from "@/components/customer-accordion";
+import { ExpandOnHash } from "@/components/expand-on-hash";
 import { fmtCurrency, fmtDate } from "@/lib/format";
 import {
   AlertTriangle,
@@ -19,9 +27,9 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const [kpis, leaderboard, lastRun, needsReview, triage] = await Promise.all([
+  const [kpis, accordion, lastRun, needsReview, triage] = await Promise.all([
     getOverviewKpis(),
-    getCustomerLeaderboard(15),
+    getCustomerAccordionData(),
     getLastRefreshRun(),
     getNeedsReview(),
     getTriageCounts(),
@@ -29,7 +37,9 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-8">
-      {/* Top bar: last refresh + refresh button */}
+      <ExpandOnHash />
+
+      {/* Top bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Clock className="h-3.5 w-3.5" />
@@ -40,12 +50,13 @@ export default async function OverviewPage() {
         <RefreshButton />
       </div>
 
-      {/* KPI cards */}
+      {/* KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Link href="/tickets?filter=open" className="block">
           <KpiCard
             label="Open dealblockers"
             value={String(kpis.openCount)}
+            hint="Currently unresolved"
             icon={<AlertTriangle className="h-4 w-4" />}
             variant={kpis.openCount > 0 ? "warning" : "success"}
           />
@@ -72,6 +83,7 @@ export default async function OverviewPage() {
           <KpiCard
             label="Past Promised ETA"
             value={String(kpis.pastEtaCount)}
+            hint="Open and overdue"
             icon={<CalendarX className="h-4 w-4" />}
             variant={kpis.pastEtaCount > 0 ? "danger" : "success"}
           />
@@ -80,13 +92,14 @@ export default async function OverviewPage() {
           <KpiCard
             label="Median closure (90d)"
             value={kpis.medianClosureDays != null ? `${Math.round(kpis.medianClosureDays)}d` : "—"}
+            hint="Last 90 days"
             icon={<Timer className="h-4 w-4" />}
             variant="info"
           />
         </Link>
       </div>
 
-      {/* Triage section */}
+      {/* Triage */}
       <section>
         <SectionHeader
           icon={<ClipboardList className="h-4 w-4" />}
@@ -138,62 +151,15 @@ export default async function OverviewPage() {
         </div>
       </section>
 
-      {/* Top customers table */}
+      {/* All customers — expandable */}
       <section>
         <SectionHeader
           icon={<Users className="h-4 w-4" />}
-          title="Top customers"
-          description="By open ticket count"
+          title="Customers"
+          description={`${accordion.grouped.length} customers · click to expand tickets`}
           className="mb-4"
         />
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Customer
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Tickets
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  ARR
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  iACV
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {leaderboard.map((row, i) => (
-                <tr
-                  key={row.customer ?? "unknown"}
-                  className={`group transition-colors hover:bg-blue-50/50 ${i % 2 === 1 ? "bg-slate-50/50" : "bg-white"}`}
-                >
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/customers#${encodeURIComponent(row.customer ?? "Unknown")}`}
-                      className="font-medium text-slate-800 hover:text-blue-600 hover:underline"
-                    >
-                      {row.customer ?? "Unknown"}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-slate-700">
-                    <span className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-xs font-semibold text-slate-700">
-                      {row.n}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-700">
-                    {fmtCurrency(row.arr)}
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-700">
-                    {fmtCurrency(row.iacv)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <CustomerAccordion grouped={accordion.grouped} byCustomer={accordion.byCustomer} />
       </section>
     </div>
   );
