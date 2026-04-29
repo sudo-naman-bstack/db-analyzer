@@ -248,6 +248,51 @@ export async function getTriageCounts() {
   return { noEta: noEta?.n ?? 0, unassigned: unassigned?.n ?? 0, stale: stale?.n ?? 0 };
 }
 
+export async function getTopRisk(limit = 30) {
+  const result = await db.execute<{
+    key: string;
+    summary: string;
+    customer: string | null;
+    status: string;
+    status_category: string;
+    assignee: string | null;
+    ce_name: string | null;
+    promised_eta: string | null;
+    baseline_arr: string | null;
+    created: Date;
+    updated: Date;
+    risk_score: number;
+    age_days: number;
+    stale_days: number;
+  }>(sql`
+    SELECT
+      key, summary, customer, status, status_category, assignee, ce_name,
+      promised_eta, baseline_arr, created, updated,
+      (
+        0.4 * LEAST(GREATEST(LN(GREATEST(COALESCE(baseline_arr::numeric, 0), 1)) / 14.0, 0), 1)
+      + 0.2 * LEAST(EXTRACT(EPOCH FROM (NOW() - created)) / (90 * 86400), 1)
+      + 0.2 * (CASE WHEN promised_eta IS NOT NULL AND promised_eta < CURRENT_DATE THEN 1 ELSE 0 END)
+      + 0.2 * LEAST(EXTRACT(EPOCH FROM (NOW() - updated)) / (30 * 86400), 1)
+      ) AS risk_score,
+      EXTRACT(DAY FROM (NOW() - created))::int AS age_days,
+      EXTRACT(DAY FROM (NOW() - updated))::int AS stale_days
+    FROM tickets
+    WHERE status_category <> 'done'
+    ORDER BY risk_score DESC
+    LIMIT ${limit}
+  `);
+  return result.rows.map((r) => ({
+    ...r,
+    riskScore: Number(r.risk_score),
+    ageDays: Number(r.age_days),
+    staleDays: Number(r.stale_days),
+    statusCategory: r.status_category,
+    ceName: r.ce_name,
+    promisedEta: r.promised_eta,
+    baselineArr: r.baseline_arr,
+  }));
+}
+
 export async function getAgingBuckets() {
   const result = await db.execute<{
     b1: number;

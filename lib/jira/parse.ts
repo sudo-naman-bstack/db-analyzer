@@ -25,7 +25,7 @@ export interface ParsedIssue {
   }>;
 }
 
-function adfToText(node: any): string {
+export function adfToText(node: any): string {
   if (!node) return "";
   if (typeof node === "string") return node;
   let text = "";
@@ -48,7 +48,7 @@ function adfToText(node: any): string {
   return text;
 }
 
-function descriptionToString(raw: unknown): string {
+export function descriptionToString(raw: unknown): string {
   if (typeof raw === "string") return raw;
   if (raw && typeof raw === "object") return adfToText(raw);
   return "";

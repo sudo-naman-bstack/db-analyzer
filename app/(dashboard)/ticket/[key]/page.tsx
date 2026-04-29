@@ -1,9 +1,10 @@
 import { getTicket, getStatusHistory } from "@/lib/db/queries";
+import { ShowLatestStatus } from "@/components/show-latest-status";
 import { fmtDate, fmtCurrency, daysBetween } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { EtaBadge } from "@/components/eta-badge";
 import { notFound } from "next/navigation";
-import { ExternalLink, ArrowRight, MessageSquare } from "lucide-react";
+import { ExternalLink, ArrowRight, MessageSquare, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
 
 function extractSlackUrls(description: string | null): string[] {
   if (!description) return [];
@@ -31,12 +32,29 @@ export default async function TicketPage({ params }: { params: Promise<{ key: st
   const history = await getStatusHistory(key);
   const jiraUrl = `${process.env.JIRA_BASE_URL}/browse/${ticket.key}`;
   const slackUrls = extractSlackUrls(ticket.descriptionRaw);
+  const staleDays = daysBetween(ticket.updated, new Date());
+  const stripe =
+    staleDays >= 14
+      ? { bg: "bg-red-50 border-red-200", text: "text-red-700", icon: AlertCircle, label: `Stale — no update in ${staleDays} days` }
+      : staleDays >= 7
+        ? { bg: "bg-amber-50 border-amber-200", text: "text-amber-700", icon: Clock, label: `Quiet — last update ${staleDays} days ago` }
+        : { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", icon: CheckCircle2, label: `Active — updated ${staleDays === 0 ? "today" : `${staleDays} day${staleDays === 1 ? "" : "s"} ago`}` };
+  const StripeIcon = stripe.icon;
   const daysOpen = ticket.doneAt
     ? daysBetween(ticket.created, ticket.doneAt)
     : daysBetween(ticket.created, new Date());
 
   return (
     <div className="space-y-6">
+      {/* Freshness stripe */}
+      <div
+        className={`flex items-center gap-3 rounded-xl border ${stripe.bg} px-4 py-3 ${stripe.text}`}
+        title="Updated time tracks any change to the ticket — status moves, comments, field edits, ETA changes, etc. Synced from Jira's `updated` timestamp."
+      >
+        <StripeIcon className="h-4 w-4 shrink-0" />
+        <span className="text-sm font-medium">{stripe.label}</span>
+      </div>
+
       {/* Ticket header */}
       <div>
         <div className="mb-2 flex items-center gap-2">
@@ -135,6 +153,9 @@ export default async function TicketPage({ params }: { params: Promise<{ key: st
           </div>
         </section>
       )}
+
+      {/* Latest status AI summary */}
+      <ShowLatestStatus ticketKey={ticket.key} />
 
       {/* Status timeline */}
       <section>

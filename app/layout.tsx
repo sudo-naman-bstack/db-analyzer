@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ShieldAlert, LayoutDashboard, Users, TrendingUp, ClipboardCheck } from "lucide-react";
+import { ShieldAlert, LayoutDashboard, Users, TrendingUp, ClipboardCheck, Flame } from "lucide-react";
 import { LogoutLink } from "@/components/logout-link";
 import { NavLink } from "@/components/nav-link";
 import "./globals.css";
@@ -40,6 +40,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NavLink href="/closures">
                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                 Closures
+              </NavLink>
+              <NavLink href="/risk">
+                <Flame className="h-3.5 w-3.5 shrink-0" />
+                Top risk
               </NavLink>
               <NavLink href="/admin/needs-review">
                 <ClipboardCheck className="h-3.5 w-3.5 shrink-0" />
