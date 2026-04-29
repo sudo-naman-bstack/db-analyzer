@@ -23,6 +23,8 @@ import {
   UserX,
   ClipboardList,
   Users,
+  Flame,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -165,6 +167,23 @@ export default async function OverviewPage() {
             </Link>
           )}
         </div>
+      </section>
+
+      {/* Action queue */}
+      <section>
+        <Link
+          href="/risk"
+          className="group flex items-center gap-4 rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-orange-50 p-5 shadow-sm transition-all hover:shadow-md"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+            <Flame className="h-5 w-5" />
+          </span>
+          <div className="flex-1">
+            <h3 className="text-base font-semibold text-slate-900">Top risk tickets</h3>
+            <p className="mt-0.5 text-sm text-slate-600">Open tickets ranked by ARR + age + past-ETA + staleness — start your day here</p>
+          </div>
+          <ArrowRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-1" />
+        </Link>
       </section>
 
       {/* Open ticket age breakdown */}

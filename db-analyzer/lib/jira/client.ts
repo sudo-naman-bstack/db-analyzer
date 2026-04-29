@@ -1,5 +1,5 @@
-import { ISSUE_FIELDS_TO_REQUEST } from "./fields";
-import { parseIssue, type ParsedIssue } from "./parse";
+import { ISSUE_FIELDS_TO_REQUEST, JIRA_FIELDS } from "./fields";
+import { parseIssue, type ParsedIssue, descriptionToString, adfToText } from "./parse";
 
 function formatJqlDate(d: Date): string {
   const yyyy = d.getUTCFullYear();
@@ -84,4 +84,69 @@ export async function fetchAllDealblockerIssues(
   } while (nextPageToken);
 
   return all;
+}
+
+export interface SingleIssueDetail {
+  key: string;
+  summary: string;
+  status: string;
+  description: string;
+  comments: Array<{ author: string; createdAt: string; body: string }>;
+  linkedIssues: Array<{ key: string; summary: string; relationship: string }>;
+  promisedEta: string | null;
+  ceName: string | null;
+  customer: string | null;
+}
+
+export async function fetchSingleIssue(key: string): Promise<SingleIssueDetail | null> {
+  const base = process.env.JIRA_BASE_URL;
+  if (!base) throw new Error("JIRA_BASE_URL not set");
+  const url = new URL(`/rest/api/3/issue/${encodeURIComponent(key)}`, base);
+  url.searchParams.set("fields", "*all");
+  url.searchParams.set("expand", "renderedFields,changelog");
+  const res = await fetchWithRetry(url, {
+    headers: { Authorization: authHeader(), Accept: "application/json" },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Jira ${res.status}: ${await res.text()}`);
+  const raw = (await res.json()) as any;
+  const f = raw.fields ?? {};
+
+  // Comments — Jira v3 returns ADF for body too
+  const comments = (f.comment?.comments ?? []).map((c: any) => ({
+    author: c.author?.displayName ?? "Unknown",
+    createdAt: c.created,
+    body: typeof c.body === "string" ? c.body : adfToText(c.body),
+  }));
+
+  // Linked issues
+  const linkedIssues: Array<{ key: string; summary: string; relationship: string }> = [];
+  for (const link of f.issuelinks ?? []) {
+    if (link.outwardIssue) {
+      linkedIssues.push({
+        key: link.outwardIssue.key,
+        summary: link.outwardIssue.fields?.summary ?? "",
+        relationship: link.type?.outward ?? "relates to",
+      });
+    }
+    if (link.inwardIssue) {
+      linkedIssues.push({
+        key: link.inwardIssue.key,
+        summary: link.inwardIssue.fields?.summary ?? "",
+        relationship: link.type?.inward ?? "is related to",
+      });
+    }
+  }
+
+  return {
+    key: raw.key,
+    summary: f.summary ?? "",
+    status: f.status?.name ?? "",
+    description: descriptionToString(f.description),
+    comments,
+    linkedIssues,
+    promisedEta: f[JIRA_FIELDS.promisedEta] ?? null,
+    ceName: f[JIRA_FIELDS.ceName] ?? null,
+    customer: null,
+  };
 }

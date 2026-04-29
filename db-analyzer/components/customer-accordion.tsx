@@ -1,8 +1,15 @@
 import { fmtCurrency } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { EtaBadge } from "@/components/eta-badge";
+import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import type { Ticket } from "@/lib/db/schema";
+
+function firstSlackUrl(description: string | null): string | null {
+  if (!description) return null;
+  const m = description.match(/https?:\/\/[\w-]*\.?slack\.com\/[^\s<>"']+/i);
+  return m ? m[0] : null;
+}
 
 export interface CustomerGroup {
   customer: string | null;
@@ -71,6 +78,7 @@ export function CustomerAccordion({
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">CE</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Promised ETA</th>
                     <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">ARR</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Slack</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -104,6 +112,24 @@ export function CustomerAccordion({
                       </td>
                       <td className="px-4 py-2.5 text-right font-mono tabular-nums text-slate-700">
                         {fmtCurrency(t.baselineArr)}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        {(() => {
+                          const url = firstSlackUrl(t.descriptionRaw);
+                          return url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                              title="Open Slack thread"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </a>
+                          ) : (
+                            <span className="text-slate-300">—</span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}
