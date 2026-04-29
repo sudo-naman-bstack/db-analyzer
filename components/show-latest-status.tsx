@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ExternalLink, MessageSquare, Loader2 } from "lucide-react";
+import { Sparkles, ExternalLink, Loader2 } from "lucide-react";
+import { SlackIcon } from "@/components/slack-icon";
 
 interface SummaryResponse {
   summary: string;
@@ -94,7 +95,7 @@ export function ShowLatestStatus({ ticketKey }: { ticketKey: string }) {
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 hover:border-blue-200 hover:bg-blue-50"
                   >
-                    <MessageSquare className="h-3 w-3" />
+                    <SlackIcon className="h-3 w-3" />
                     Slack {data.slackUrls.length > 1 ? i + 1 : "thread"}
                     <ExternalLink className="h-3 w-3 opacity-60" />
                   </a>

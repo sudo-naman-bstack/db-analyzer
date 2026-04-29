@@ -4,7 +4,8 @@ import { fmtDate, fmtCurrency, daysBetween } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { EtaBadge } from "@/components/eta-badge";
 import { notFound } from "next/navigation";
-import { ExternalLink, ArrowRight, MessageSquare, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
+import { ExternalLink, ArrowRight, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
+import { SlackIcon } from "@/components/slack-icon";
 
 function extractSlackUrls(description: string | null): string[] {
   if (!description) return [];
@@ -145,7 +146,7 @@ export default async function TicketPage({ params }: { params: Promise<{ key: st
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
               >
-                <MessageSquare className="h-4 w-4" />
+                <SlackIcon className="h-4 w-4" />
                 Slack thread {i + 1}
                 <ExternalLink className="h-3 w-3 opacity-60" />
               </a>
