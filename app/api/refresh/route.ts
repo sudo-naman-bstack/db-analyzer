@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
   const result = await runRefresh({
     trigger,
-    maxLlmCalls: 10,
+    maxLlmCalls: 5,
     force,
     deps: {
       upsertTicket,
