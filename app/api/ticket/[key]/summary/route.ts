@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { fetchSingleIssue } from "@/lib/jira/client";
 import { GoogleGenAI } from "@google/genai";
-import { COOKIE_NAME, verifyAuthCookie } from "@/lib/auth";
+import { auth } from "@/auth";
 import { MODEL_CASCADE } from "@/lib/llm/gemini";
 
 export const runtime = "nodejs";
@@ -21,8 +20,8 @@ Output as JSON with this exact shape (no other text):
 Be factual. Don't speculate. If information is missing, say so.`;
 
 export async function POST(req: Request, { params }: { params: Promise<{ key: string }> }) {
-  const c = await cookies();
-  if (!(await verifyAuthCookie(c.get(COOKIE_NAME)?.value))) {
+  const session = await auth();
+  if (!session?.user?.email) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

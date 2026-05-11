@@ -1,21 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE_NAME, verifyAuthCookie } from "./lib/auth";
+import { auth } from "./auth";
 
 const PUBLIC_PREFIXES = [
   "/login",
-  "/api/login",
-  "/api/logout",
-  "/api/refresh", // self-authenticates: Bearer for cron, cookie for manual
+  "/api/auth",
+  "/api/refresh",
 ];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
     return NextResponse.next();
   }
 
-  const cookie = req.cookies.get(COOKIE_NAME)?.value;
-  if (await verifyAuthCookie(cookie)) {
+  const session = await auth();
+  if (session?.user?.email) {
     return NextResponse.next();
   }
 

@@ -1,16 +1,16 @@
 "use client";
 
 import { LogOut } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 export function LogoutLink() {
-  const onClick = async (e: React.MouseEvent) => {
+  const onClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    await fetch("/api/logout", { method: "POST" });
-    window.location.href = "/login";
+    void signOut({ callbackUrl: "/login" });
   };
   return (
     <a
-      href="/api/logout"
+      href="#"
       onClick={onClick}
       className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
     >
