@@ -37,13 +37,20 @@ export interface RefreshOptions {
   deps: RefreshDeps;
 }
 
+// Hard wall-clock budget. Vercel kills the function at 60s; stop processing
+// at this point and return what we have. Client loops back for more.
+const WALL_CLOCK_BUDGET_MS = 45_000;
+
 export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
   const startedAt = new Date();
+  const startMs = Date.now();
   const { deps } = opts;
   let llmCalls = 0;
   let errors = 0;
   let newOrChanged = 0;
   let llmDeferred = 0;
+  let timeBudgetExhausted = false;
+  let unprocessedCount = 0;
   const errorMessages: string[] = [];
 
   let since: Date | undefined;
@@ -64,7 +71,15 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
     return deps.categoryOf(status);
   };
 
-  for (const issue of issues) {
+  for (let i = 0; i < issues.length; i++) {
+    if (Date.now() - startMs >= WALL_CLOCK_BUDGET_MS) {
+      // Stop cleanly before Vercel kills us. Remaining tickets will be
+      // picked up by the client's next batch call.
+      timeBudgetExhausted = true;
+      unprocessedCount = issues.length - i;
+      break;
+    }
+    const issue = issues[i];
     try {
       const transitions = extractStatusTransitions(issue.key, issue.rawChangelog).map((t) => ({
         ...t,
@@ -164,7 +179,7 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
     newOrChanged,
     llmCalls,
     errors,
-    hasMore: llmDeferred > 0,
-    remainingLlm: llmDeferred,
+    hasMore: llmDeferred > 0 || timeBudgetExhausted,
+    remainingLlm: llmDeferred + unprocessedCount,
   };
 }
