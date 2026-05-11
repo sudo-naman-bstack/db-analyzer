@@ -33,23 +33,37 @@ In **Settings → Environment Variables**, add:
 - `JIRA_PROJECT_KEY` = `TM`
 - `GEMINI_API_KEY` = (create at https://aistudio.google.com/apikey)
 - `CRON_SECRET` = (any random string — generate with `openssl rand -hex 32`)
-- `APP_PASSWORD` = (the password your team will use to sign in — keep it strong)
+- `AUTH_SECRET` = (generate with `openssl rand -base64 33`)
+- `AUTH_GOOGLE_ID` = (Google OAuth client ID — see step 5)
+- `AUTH_GOOGLE_SECRET` = (Google OAuth client secret — see step 5)
+- `NEXTAUTH_URL` = your deployment URL (e.g. https://db-analyzer-seven.vercel.app)
 - `TIMEZONE` = `Asia/Kolkata`
 
 `POSTGRES_URL` is auto-injected by Vercel once you provision the database in step 3 — don't set it manually.
 
 After adding env vars, **redeploy** the project (Deployments → ... → Redeploy) so the app picks them up.
 
-## 5. App-level password (Hobby plan)
+## 5. Google OAuth
 
-Vercel's built-in Password Protection is Pro-only. Instead, this dashboard ships with its own login:
+This dashboard uses Google OAuth (via NextAuth v5 / Auth.js), restricted to `@browserstack.com` accounts.
 
-- The `APP_PASSWORD` env var (set in step 4) is the shared password.
-- Anyone visiting the dashboard hits a `/login` screen and signs in.
-- Successful login sets an HTTP-only signed cookie; the cookie lasts 30 days.
-- A "Sign out" link in the top nav clears the cookie.
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → Create a new project (or pick an existing one).
+2. **APIs & Services → OAuth consent screen** → Configure:
+   - User type: **Internal** if your organisation has Google Workspace; otherwise **External** and add team members as test users.
+   - Fill in app name, support email, and developer contact.
+3. **APIs & Services → Credentials → Create Credentials → OAuth client ID**:
+   - Application type: **Web application**
+   - Authorized redirect URI: `https://db-analyzer-seven.vercel.app/api/auth/callback/google`
+     (replace with your actual Vercel URL if different)
+4. Copy the **Client ID** and **Client Secret**.
+5. In Vercel **Settings → Environment Variables**, add:
+   - `AUTH_GOOGLE_ID` = Client ID from step 4
+   - `AUTH_GOOGLE_SECRET` = Client Secret from step 4
+   - `AUTH_SECRET` = output of `openssl rand -base64 33` (random signing secret for JWT sessions)
+   - `NEXTAUTH_URL` = your deployment URL (e.g. `https://db-analyzer-seven.vercel.app`)
+6. **Redeploy** the project so the new env vars take effect.
 
-Share the password with your director offline (Slack DM, 1Password, etc.). Treat `APP_PASSWORD` like any other secret — rotate by updating the env var in Vercel and redeploying.
+Any Google account that does not end in `@browserstack.com` will be rejected with an "Access denied" message on the login page. No shared password is needed.
 
 ## 6. Apply DB schema
 
@@ -66,7 +80,7 @@ Alternative: paste the contents of `drizzle/0000_<name>.sql` into the Vercel Pos
 
 ## 7. Trigger first refresh
 
-Visit the deployed URL, log in with the password, click **Refresh now** on the Overview page. The dashboard should populate with all dealblocker tickets.
+Visit the deployed URL, sign in with your BrowserStack Google account, click **Refresh now** on the Overview page. The dashboard should populate with all dealblocker tickets.
 
 ## 8. Verify cron
 
@@ -83,4 +97,4 @@ Two free options:
 
 ## 9. Share with Director
 
-Send the URL + password.
+Send the URL. Anyone with a `@browserstack.com` Google account can sign in directly.

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { runRefresh } from "@/lib/refresh";
 import {
   upsertTicket,
@@ -9,7 +8,7 @@ import {
 } from "@/lib/db/upserts";
 import { getOverride, getCachedExtraction, getLastSuccessfulRefreshTime } from "@/lib/db/queries";
 import { extractCustomerWithLLM } from "@/lib/llm/gemini";
-import { COOKIE_NAME, verifyAuthCookie } from "@/lib/auth";
+import { auth } from "@/auth";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -21,9 +20,9 @@ function bearerAuthorized(req: Request): boolean {
   return header === `Bearer ${expected}`;
 }
 
-async function cookieAuthorized(): Promise<boolean> {
-  const c = await cookies();
-  return verifyAuthCookie(c.get(COOKIE_NAME)?.value);
+async function sessionAuthorized(): Promise<boolean> {
+  const session = await auth();
+  return !!session?.user?.email;
 }
 
 export async function POST(req: Request) {
@@ -37,7 +36,7 @@ export async function POST(req: Request) {
     }
   } else {
     // manual: require either a valid session cookie OR Bearer (for external schedulers)
-    if (!bearerAuthorized(req) && !(await cookieAuthorized())) {
+    if (!bearerAuthorized(req) && !(await sessionAuthorized())) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
   }
