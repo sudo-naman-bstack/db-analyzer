@@ -2,6 +2,7 @@ import { getTicketsByFilter, type TicketFilter } from "@/lib/db/queries";
 import { fmtDate, fmtCurrency, daysBetween } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { EtaBadge } from "@/components/eta-badge";
+import { BulkActionTable } from "@/components/bulk-action-table";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ const FILTER_LABELS: Record<TicketFilter, string> = {
 };
 
 const VALID_FILTERS: TicketFilter[] = ["open", "past-eta", "done", "no-eta", "unassigned", "stale", "all"];
+const ACTIONABLE_FILTERS = ["stale", "no-eta"] as const;
 
 export default async function TicketsPage({
   searchParams,
@@ -28,6 +30,8 @@ export default async function TicketsPage({
   const filter: TicketFilter = VALID_FILTERS.includes(raw) ? raw : "all";
   const customer = params.customer;
   const rows = await getTicketsByFilter(filter, customer);
+
+  const isActionable = (ACTIONABLE_FILTERS as readonly string[]).includes(filter);
 
   return (
     <div className="space-y-5">
@@ -46,73 +50,98 @@ export default async function TicketsPage({
         </span>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Key</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Summary</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Assignee</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">CE</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Created</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Age</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Promised ETA</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">ARR</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {rows.map((t, i) => {
-                const age = daysBetween(t.created, new Date());
-                const ageColor =
-                  age > 60 && t.statusCategory !== "done"
-                    ? "text-red-700 font-semibold"
-                    : age > 30 && t.statusCategory !== "done"
-                      ? "text-amber-700 font-medium"
-                      : "text-slate-600";
-                return (
-                  <tr
-                    key={t.key}
-                    className={`group transition-colors hover:bg-blue-50/40 ${i % 2 === 1 ? "bg-slate-50/40" : "bg-white"}`}
-                  >
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/ticket/${t.key}`}
-                        className="font-mono text-xs font-medium text-blue-600 hover:underline"
-                      >
-                        {t.key}
-                      </Link>
-                    </td>
-                    <td className="max-w-xs px-4 py-3">
-                      <span className="line-clamp-2 text-slate-700">{t.summary}</span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">{t.customer ?? "Unknown"}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={t.status} />
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{t.assignee ?? <span className="text-slate-400">—</span>}</td>
-                    <td className="px-4 py-3 text-slate-600">{t.ceName ?? <span className="text-slate-400">—</span>}</td>
-                    <td className="px-4 py-3 tabular-nums text-slate-500">{fmtDate(t.created)}</td>
-                    <td className={`px-4 py-3 text-right tabular-nums ${ageColor}`}>{age}d</td>
-                    <td className="px-4 py-3">
-                      <EtaBadge
-                        eta={t.promisedEta as unknown as string | null}
-                        statusCategory={t.statusCategory}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-700">
-                      {fmtCurrency(t.baselineArr)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {isActionable && (
+        <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+          Select tickets and use the action bar to post Jira comments in bulk.
         </div>
-      </div>
+      )}
+
+      {isActionable ? (
+        <BulkActionTable
+          rows={rows.map((t) => ({
+            key: t.key,
+            summary: t.summary,
+            customer: t.customer,
+            status: t.status,
+            statusCategory: t.statusCategory,
+            assignee: t.assignee,
+            ceName: t.ceName,
+            created: t.created.toISOString(),
+            updated: t.updated.toISOString(),
+            promisedEta: t.promisedEta,
+            baselineArr: t.baselineArr,
+          }))}
+          filter={filter as "stale" | "no-eta"}
+        />
+      ) : (
+        /* Static table for non-actionable filters */
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Key</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Summary</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Assignee</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">CE</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Created</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Age</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Promised ETA</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">ARR</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {rows.map((t, i) => {
+                  const age = daysBetween(t.created, new Date());
+                  const ageColor =
+                    age > 60 && t.statusCategory !== "done"
+                      ? "text-red-700 font-semibold"
+                      : age > 30 && t.statusCategory !== "done"
+                        ? "text-amber-700 font-medium"
+                        : "text-slate-600";
+                  return (
+                    <tr
+                      key={t.key}
+                      className={`group transition-colors hover:bg-blue-50/40 ${i % 2 === 1 ? "bg-slate-50/40" : "bg-white"}`}
+                    >
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/ticket/${t.key}`}
+                          className="font-mono text-xs font-medium text-blue-600 hover:underline"
+                        >
+                          {t.key}
+                        </Link>
+                      </td>
+                      <td className="max-w-xs px-4 py-3">
+                        <span className="line-clamp-2 text-slate-700">{t.summary}</span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">{t.customer ?? "Unknown"}</td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={t.status} />
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{t.assignee ?? <span className="text-slate-400">—</span>}</td>
+                      <td className="px-4 py-3 text-slate-600">{t.ceName ?? <span className="text-slate-400">—</span>}</td>
+                      <td className="px-4 py-3 tabular-nums text-slate-500">{fmtDate(t.created)}</td>
+                      <td className={`px-4 py-3 text-right tabular-nums ${ageColor}`}>{age}d</td>
+                      <td className="px-4 py-3">
+                        <EtaBadge
+                          eta={t.promisedEta as unknown as string | null}
+                          statusCategory={t.statusCategory}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-700">
+                        {fmtCurrency(t.baselineArr)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

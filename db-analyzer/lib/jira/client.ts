@@ -98,6 +98,39 @@ export interface SingleIssueDetail {
   customer: string | null;
 }
 
+export async function postComment(key: string, body: string): Promise<void> {
+  const base = process.env.JIRA_BASE_URL;
+  if (!base) throw new Error("JIRA_BASE_URL not set");
+  const url = new URL(`/rest/api/3/issue/${encodeURIComponent(key)}/comment`, base);
+  const res = await fetchWithRetry(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: authHeader(),
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        body: {
+          version: 1,
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: body }],
+            },
+          ],
+        },
+      }),
+    },
+    2,
+  );
+  if (!res.ok) {
+    throw new Error(`Jira ${res.status}: ${await res.text()}`);
+  }
+}
+
 export async function fetchSingleIssue(key: string): Promise<SingleIssueDetail | null> {
   const base = process.env.JIRA_BASE_URL;
   if (!base) throw new Error("JIRA_BASE_URL not set");
