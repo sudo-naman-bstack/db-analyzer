@@ -1,4 +1,4 @@
-import { getEtaTrackingData, getEtaChangeSummary } from "@/lib/db/eta-queries";
+import { getEtaTrackingData, getEtaChangeSummary } from "@/lib/db/queries";
 import { fmtDate, fmtCurrency } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { SectionHeader } from "@/components/section-header";
