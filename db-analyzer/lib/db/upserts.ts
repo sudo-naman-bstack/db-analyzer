@@ -1,6 +1,6 @@
 import { db } from "./client";
-import { tickets, statusHistory, extractionCache, refreshRuns } from "./schema";
-import type { NewTicket, NewStatusHistoryRow } from "./schema";
+import { tickets, statusHistory, extractionCache, refreshRuns, etaChanges } from "./schema";
+import type { NewTicket, NewStatusHistoryRow, NewEtaChangeRow } from "./schema";
 
 export async function upsertTicket(t: NewTicket) {
   await db
@@ -36,6 +36,13 @@ export async function upsertTicket(t: NewTicket) {
 export async function insertStatusTransitionsIfNew(rows: NewStatusHistoryRow[]) {
   if (rows.length === 0) return;
   await db.insert(statusHistory).values(rows).onConflictDoNothing();
+}
+
+export async function insertEtaChangesIfNew(rows: NewEtaChangeRow[]) {
+  if (rows.length === 0) return;
+  for (const row of rows) {
+    await db.insert(etaChanges).values(row).onConflictDoNothing();
+  }
 }
 
 export async function upsertExtractionCache(row: {

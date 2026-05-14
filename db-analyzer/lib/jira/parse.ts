@@ -21,7 +21,7 @@ export interface ParsedIssue {
   rawChangelog: Array<{
     created: string;
     author: string | null;
-    items: Array<{ field: string; fromString: string | null; toString: string | null }>;
+    items: Array<{ field: string; fieldId: string | null; fromString: string | null; toString: string | null }>;
   }>;
 }
 
@@ -100,6 +100,7 @@ export function parseIssue(raw: any): ParsedIssue {
       author: h.author?.displayName ?? null,
       items: (h.items ?? []).map((it: any) => ({
         field: it.field,
+        fieldId: it.fieldId ?? null,
         fromString: it.fromString ?? null,
         toString: it.toString ?? null,
       })),

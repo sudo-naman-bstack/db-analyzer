@@ -17,6 +17,7 @@ afterAll(() => server.close());
 const baseDeps = () => {
   const upsertTicket = vi.fn().mockResolvedValue(undefined);
   const insertStatusTransitionsIfNew = vi.fn().mockResolvedValue(undefined);
+  const insertEtaChangesIfNew = vi.fn().mockResolvedValue(undefined);
   const upsertExtractionCache = vi.fn().mockResolvedValue(undefined);
   const recordRefreshRun = vi.fn().mockResolvedValue(undefined);
   const getOverride = vi.fn().mockResolvedValue(null);
@@ -28,6 +29,7 @@ const baseDeps = () => {
   return {
     upsertTicket,
     insertStatusTransitionsIfNew,
+    insertEtaChangesIfNew,
     upsertExtractionCache,
     recordRefreshRun,
     getOverride,

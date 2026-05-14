@@ -1,5 +1,5 @@
 import { fetchAllDealblockerIssues } from "./jira/client";
-import { extractStatusTransitions } from "./jira/changelog";
+import { extractStatusTransitions, extractEtaChanges } from "./jira/changelog";
 import { deriveDoneAt } from "./status";
 import { resolveCustomer, contentHash, type CacheEntry } from "./extract/orchestrator";
 import type { ExtractInput, ExtractResult } from "./llm/gemini";
@@ -8,6 +8,7 @@ import { buildCategoryMap, makeCategoryOf } from "./jira/category";
 export interface RefreshDeps {
   upsertTicket: (t: any) => Promise<void>;
   insertStatusTransitionsIfNew: (rows: any[]) => Promise<void>;
+  insertEtaChangesIfNew: (rows: any[]) => Promise<void>;
   upsertExtractionCache: (row: any) => Promise<void>;
   recordRefreshRun: (row: any) => Promise<void>;
   getOverride: (key: string) => Promise<string | null>;
@@ -139,6 +140,11 @@ export async function runRefresh(opts: RefreshOptions): Promise<RefreshResult> {
 
       if (transitions.length > 0) {
         await deps.insertStatusTransitionsIfNew(transitions);
+      }
+
+      const etaChangesForIssue = extractEtaChanges(issue.key, issue.rawChangelog);
+      if (etaChangesForIssue.length > 0) {
+        await deps.insertEtaChangesIfNew(etaChangesForIssue);
       }
 
       if (resolved.source !== "override") {

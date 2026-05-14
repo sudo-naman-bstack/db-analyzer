@@ -69,6 +69,24 @@ export const customerOverrides = pgTable("customer_overrides", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
 });
 
+export const etaChanges = pgTable(
+  "eta_changes",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    issueKey: text("issue_key")
+      .notNull()
+      .references(() => tickets.key, { onDelete: "cascade" }),
+    changedAt: timestamp("changed_at", { withTimezone: true }).notNull(),
+    fromEta: date("from_eta"),
+    toEta: date("to_eta"),
+    author: text("author"),
+  },
+  (t) => ({
+    uniq: uniqueIndex("eta_changes_uniq").on(t.issueKey, t.changedAt),
+    idx: index("eta_changes_issue_idx").on(t.issueKey),
+  }),
+);
+
 export const refreshRuns = pgTable("refresh_runs", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
@@ -85,3 +103,5 @@ export type Ticket = typeof tickets.$inferSelect;
 export type NewTicket = typeof tickets.$inferInsert;
 export type StatusHistoryRow = typeof statusHistory.$inferSelect;
 export type NewStatusHistoryRow = typeof statusHistory.$inferInsert;
+export type EtaChangeRow = typeof etaChanges.$inferSelect;
+export type NewEtaChangeRow = typeof etaChanges.$inferInsert;

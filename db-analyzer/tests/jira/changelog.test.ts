@@ -8,14 +8,14 @@ describe("extractStatusTransitions", () => {
         created: "2026-01-01T00:00:00.000Z",
         author: "Alice",
         items: [
-          { field: "status", fromString: "Open", toString: "In Progress" },
-          { field: "summary", fromString: "old", toString: "new" },
+          { field: "status", fieldId: null, fromString: "Open", toString: "In Progress" },
+          { field: "summary", fieldId: null, fromString: "old", toString: "new" },
         ],
       },
       {
         created: "2026-01-05T00:00:00.000Z",
         author: "Bob",
-        items: [{ field: "status", fromString: "In Progress", toString: "Done" }],
+        items: [{ field: "status", fieldId: null, fromString: "In Progress", toString: "Done" }],
       },
     ]);
 
@@ -34,7 +34,7 @@ describe("extractStatusTransitions", () => {
       {
         created: "2026-01-01T00:00:00.000Z",
         author: null,
-        items: [{ field: "assignee", fromString: "x", toString: "y" }],
+        items: [{ field: "assignee", fieldId: null, fromString: "x", toString: "y" }],
       },
     ]);
     expect(transitions).toHaveLength(0);

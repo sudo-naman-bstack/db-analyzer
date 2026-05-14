@@ -3,6 +3,7 @@ import { runRefresh } from "@/lib/refresh";
 import {
   upsertTicket,
   insertStatusTransitionsIfNew,
+  insertEtaChangesIfNew,
   upsertExtractionCache,
   recordRefreshRun,
 } from "@/lib/db/upserts";
@@ -48,6 +49,17 @@ export async function POST(req: Request) {
     deps: {
       upsertTicket,
       insertStatusTransitionsIfNew,
+      insertEtaChangesIfNew: async (rows: any[]) => {
+        await insertEtaChangesIfNew(
+          rows.map((r) => ({
+            issueKey: r.issueKey,
+            changedAt: new Date(r.changedAt),
+            fromEta: r.fromEta,
+            toEta: r.toEta,
+            author: r.author,
+          })),
+        );
+      },
       upsertExtractionCache,
       recordRefreshRun,
       getOverride,
