@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { ShieldAlert, LayoutDashboard, Users, TrendingUp, ClipboardCheck, Flame, CalendarClock } from "lucide-react";
 import { LogoutLink } from "@/components/logout-link";
 import { NavLink } from "@/components/nav-link";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Dealblocker Dashboard",
@@ -11,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body className="min-h-screen bg-slate-50 text-foreground antialiased">
         {/* Top nav bar */}
         <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
